@@ -4,11 +4,33 @@ import sys
 import vtk
 import pickle
 import numpy as np
+import multiprocessing
+from functools import partial
 from scipy.optimize import differential_evolution
 #
-def conv(xk,convergence):
+def conv(xk,convergence,args):
 #
-    print(convergence)
+    n=args[0]
+    objs=args[1]
+    f=simu(xk,n,objs)
+    print('%7.3f %14.3e'%(convergence,f))
+#
+    for i in range(n):
+#
+        red = vtk.vtkXMLPolyDataReader()
+        red.ReadFromInputStringOn()
+        red.SetInputString(objs[i])
+        red.Update()
+        obj = red.GetOutput()
+#
+        if i < n-1:
+            tmp = xk[7*i:7*i+7]
+        else:
+            tmp=np.zeros(7)
+            tmp[3:]=xk[7*i:7*i+4]
+        [vtp,_,_] = move(obj,tmp[:3],tmp[3:7])
+        woutfle(vtp,'see',i)
+#
     return False
 #
 def tran(vtp,tfm):
@@ -34,6 +56,15 @@ def move(vtp,trs,rot):
     vtp = tfm_flt.GetOutput()
 #
     return [vtp,tfm,tfm_flt]
+#
+def woutfle(vtp,fln,k):
+#
+    writer = vtk.vtkXMLPolyDataWriter()
+    writer.SetInputData(vtp)
+    writer.SetDataModeToBinary()
+    writer.SetCompressorTypeToNone()
+    writer.SetFileName(fln+'_%d.vtp'%k)
+    writer.Update()
 #
 def wout(vtp,fln,k):
 #
@@ -102,6 +133,7 @@ def simu(x,n,string):
 #
 if __name__ == "__main__":
 #
+    print(multiprocessing.cpu_count())
     n=int(sys.argv[1])
     fln=sys.argv[2]
 #
@@ -127,18 +159,25 @@ if __name__ == "__main__":
 #
         objs.append(obj)
 #
-    l=[-1e3]*(7*(n-1)+4)
-    u=[1e3]*(7*(n-1)+4)
+    l=[-1e2]*(7*(n-1)+4)
+    u=[1e2]*(7*(n-1)+4)
 #
-    res=differential_evolution(simu,args=(n,objs),callback=conv,bounds=list(zip(l,u)),workers=-1,seed=69,polish=True,maxiter=10000, init='sobol')
+    res=differential_evolution(simu,args=(n,objs),callback=partial(conv,args=(n,objs)),bounds=list(zip(l,u)),workers=4,seed=69,polish=True,maxiter=1000000)
     print(res)
     x=res.x
     for i in range(n):
+#
+        red = vtk.vtkXMLPolyDataReader()
+        red.ReadFromInputStringOn()
+        red.SetInputString(objs[i])
+        red.Update()
+        obj = red.GetOutput()
+#
         if i < n-1:
             tmp = x[7*i:7*i+7]
         else:
             tmp=np.zeros(7)
             tmp[3:]=x[7*i:7*i+4]
-        [vtp,_,_] = move(objs[i],tmp[:3],tmp[3:7])
-        wout(vtp,'see',i)
+        [vtp,_,_] = move(obj,tmp[:3],tmp[3:7])
+        woutfle(vtp,'see',i)
 #
