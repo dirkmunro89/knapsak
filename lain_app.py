@@ -57,10 +57,10 @@ def conv(xk,convergence,args):
         obj = red.GetOutput()
 #
 #       if i < n-1:
-        tmp = xk[7*i:7*i+7]
 #       else:
 #           tmp=np.zeros(7)
 #           tmp[3:]=xk[7*i:7*i+4]
+        tmp = xk[7*i:7*i+7]
         [vtp,_,_] = move(obj,tmp[:3],tmp[3:7],c_l,c_a)
         woutfle(vtp,'see',i)
 #
@@ -116,6 +116,12 @@ def simu(x,n,string,c_l,c_a,c_v,flg):
     tfms=[]
     bnds=[]
     objs=[]
+    apps=[]
+#
+    tfm_0 = vtk.vtkTransform()
+    tfm_0.Translate(0., 0., 0.)
+    tfm_0.Update()
+#
     for i in range(n):
 #
         red = vtk.vtkXMLPolyDataReader()
@@ -123,17 +129,16 @@ def simu(x,n,string,c_l,c_a,c_v,flg):
         red.SetInputString(string[i])
         red.Update()
         obj = red.GetOutput()
-        objs.append(obj)
+#       tmp = x[7*i:7*i+7]
+#       [vtp,_,_] = move(obj,tmp[:3],tmp[3:7],c_l,c_a)
 #
         tfm = vtk.vtkTransform()
-#       if i < n-1:
         tfm.Translate(c_l*x[i*7+0], c_l*x[i*7+1], c_l*x[i*7+2])
         tfm.RotateWXYZ(c_a*x[i*7+3], x[i*7+4], x[i*7+5], x[i*7+6])
-#       else:
-#           tfm.RotateWXYZ(c_a*x[i*7+0], x[i*7+1], x[i*7+2], x[i*7+3])
         tfm.Update()
 #
         vtp=tran(obj,tfm)
+        objs.append(vtp)
         bnds.append(vtp.GetBounds())
         tfms.append(tfm)
 #
@@ -146,20 +151,28 @@ def simu(x,n,string,c_l,c_a,c_v,flg):
                 else:
                     bds[j] = max(bds[j],bnds[i][j])
 #
+    for i in range(n-1):
+        app = vtk.vtkAppendDataSets()
+        app.SetOutputDataSetType(0)
+        for j in range(i+1,n):
+            app.AddInputData(objs[j])
+            app.Update()
+        apps.append(app.GetOutput())
+#
     c=0
     for i in range(n-1):
-        for j in range(i+1,n):
+#       for j in range(i+1,n):
 #
-            coli = vtk.vtkCollisionDetectionFilter()
-            coli.SetCollisionModeToAllContacts()
+        coli = vtk.vtkCollisionDetectionFilter()
+        coli.SetCollisionModeToAllContacts()
 #           coli.SetCollisionModeToHalfContacts()
 #           coli.SetCollisionModeToFirstContact()
-            coli.SetInputData(0, objs[i])
-            coli.SetTransform(0, tfms[i])
-            coli.SetInputData(1, objs[j])
-            coli.SetTransform(1, tfms[j])
-            coli.Update()
-            c=c+coli.GetNumberOfContacts()
+        coli.SetInputData(0, objs[i])
+        coli.SetTransform(0, tfm_0)
+        coli.SetInputData(1, apps[i])
+        coli.SetTransform(1, tfm_0)
+        coli.Update()
+        c=c+coli.GetNumberOfContacts()
 #
     f=bds[5]#-bds[4])# + np.linalg.norm(x[:3])**2.
 #   f=(bds[1]-bds[0])*(bds[3]-bds[2])*(bds[5]-bds[4])# + np.linalg.norm(x[:3])**2.
@@ -206,6 +219,7 @@ if __name__ == "__main__":
     objs=[]
     volt=0.
     c_v=0.
+#
     for i in range(n):
 #
         red = vtk.vtkSTLReader()

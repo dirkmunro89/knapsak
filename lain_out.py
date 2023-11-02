@@ -277,7 +277,6 @@ if __name__ == "__main__":
         x0=res.x
         f=res.fun
         print(f,x,flush=True)
-        stop
 #   res=minimize(simu,args=(n,objs,c_l,c_a,c_v,0), x0=x0, bounds=tup_bds, method='Nelder-Mead', options={'disp': True,'maxfev': 1000000, 'maxiter': 1000000})#, 'eps': 1e-32, 'gtol': 1e-32, 'tol': 1e-32, 'xatol': 1e-16, 'fatol': 1e-16})
 #
 #   print(res)
