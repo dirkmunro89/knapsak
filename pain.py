@@ -8,7 +8,17 @@ from scipy.optimize import differential_evolution
 #
 def conv(xk,convergence):
 #
-    print(convergence)
+    n=int((len(xk)-4)/7) +1
+    f=simu(xk,n)
+    print('%7.3f %14.3e'%(convergence,f))
+    for i in range(n):
+        if i < n-1:
+            tmp = xk[7*i:7*i+7]
+        else:
+            tmp=np.zeros(7)
+            tmp[3:]=xk[7*i:7*i+4]
+        [vtp,_,_] = move(objs[i],tmp[:3],tmp[3:7])
+        wout(vtp,'see',i)
     return False
 #
 def tran(vtp,tfm):

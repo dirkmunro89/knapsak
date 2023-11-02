@@ -7,7 +7,36 @@ import numpy as np
 import multiprocessing
 from functools import partial
 from scipy.optimize import differential_evolution
+from scipy.optimize import minimize
 #
+#
+def conv2(xk,args):
+#
+    n=args[0]
+    objs=args[1]
+    c_l=args[2]
+    c_a=args[3]
+    c_v=args[4]
+    [f,c]=simu(xk,n,objs,c_l,c_a,c_v,1)
+    print('%14.3e %6d'%(f,c))
+#
+#   for i in range(n):
+#
+#       red = vtk.vtkXMLPolyDataReader()
+#       red.ReadFromInputStringOn()
+#       red.SetInputString(objs[i])
+#       red.Update()
+#       obj = red.GetOutput()
+#
+#       if i < n-1:
+#           tmp = xk[7*i:7*i+7]
+#       else:
+#           tmp=np.zeros(7)
+#           tmp[3:]=xk[7*i:7*i+4]
+#       [vtp,_,_] = move(obj,tmp[:3],tmp[3:7],c_l,c_a)
+#       woutfle(vtp,'see',i)
+#
+    return False
 #
 def conv(xk,convergence,args):
 #
@@ -123,7 +152,7 @@ def simu(x,n,string,c_l,c_a,c_v,flg):
 #
             coli = vtk.vtkCollisionDetectionFilter()
             coli.SetCollisionModeToAllContacts()
-            coli.SetCollisionModeToHalfContacts()
+#           coli.SetCollisionModeToHalfContacts()
 #           coli.SetCollisionModeToFirstContact()
             coli.SetInputData(0, objs[i])
             coli.SetTransform(0, tfms[i])
@@ -132,22 +161,27 @@ def simu(x,n,string,c_l,c_a,c_v,flg):
             coli.Update()
             c=c+coli.GetNumberOfContacts()
 #
-    f=bds[5]-bds[4]# + np.linalg.norm(x[:3])**2.
+    f=(bds[5]-bds[4])# + np.linalg.norm(x[:3])**2.
 #   f=(bds[1]-bds[0])*(bds[3]-bds[2])*(bds[5]-bds[4])# + np.linalg.norm(x[:3])**2.
 #
 #   f=f/c_v 
     f=f+c*c_v/n/309 #est. volume per triangle
 #
     b=0.
-    ext=75.
+    ext=100.
+    y=0.
     if bds[0]<-ext:
-        b=b+abs(bds[0])-ext
+        b=b+(abs(bds[0])-ext)**1.
+        y=y+1
     if bds[1]>ext:
-        b=b+abs(bds[1])-ext
+        b=b+(abs(bds[1])-ext)**1.
+        y=y+1
     if bds[2]<-ext:
-        b=b+abs(bds[2])-ext
+        b=b+(abs(bds[2])-ext)**1.
+        y=y+1
     if bds[3]>ext:
-        b=b+abs(bds[3])-ext
+        b=b+(abs(bds[3])-ext)**1.
+        y=y+1
 #
     f=f+b*c_l
 #
@@ -165,7 +199,7 @@ if __name__ == "__main__":
 #   read in parts
 #
     c_l=0.
-    c_a=180.0
+    c_a=180.0*2
     objs=[]
     volt=0.
     c_v=0.
@@ -208,7 +242,10 @@ if __name__ == "__main__":
     l=[-1e0]*(7*(n-1)+4)
     u=[1e0]*(7*(n-1)+4)
 #
-    res=differential_evolution(simu,args=(n,objs,c_l,c_a,c_v,0),callback=partial(conv,args=(n,objs,c_l,c_a,c_v)),bounds=list(zip(l,u)),workers=2,polish=True,disp=True,maxiter=10000,updating='deferred')
+    res=differential_evolution(simu,args=(n,objs,c_l,c_a,c_v,0),callback=partial(conv,args=(n,objs,c_l,c_a,c_v)),bounds=list(zip(l,u)),workers=4,seed=1,polish=False,disp=True,maxiter=10,updating='deferred')
+#
+    x0=res.x
+    bds=[[-1.,1.] for i in range(7*(n-1)+4)]; tup_bds=tuple(bds)
     print(res)
     x=res.x
     for i in range(n):
@@ -226,4 +263,41 @@ if __name__ == "__main__":
             tmp[3:]=x[7*i:7*i+4]
         [vtp,_,_] = move(obj,tmp[:3],tmp[3:7],c_l,c_a)
         woutfle(vtp,'see',i)
+#
+#
+    f=1e80
+    fold=0.
+    while abs(f-fold)>0.1:
+        fold=f
+        res=minimize(simu,args=(n,objs,c_l,c_a,c_v,0), x0=x0, bounds=tup_bds, method='Nelder-Mead', options={'disp': True, 'adaptive': True},callback=partial(conv2,args=(n,objs,c_l,c_a,c_v)))#, 'eps': 1e-32, 'gtol': 1e-32, 'tol': 1e-32, 'xatol': 1e-16, 'fatol': 1e-16})
+        print(res)
+        x0=res.x
+        f=res.fun
+        print(f,x)
+#   res=minimize(simu,args=(n,objs,c_l,c_a,c_v,0), x0=x0, bounds=tup_bds, method='Nelder-Mead', options={'disp': True,'maxfev': 1000000, 'maxiter': 1000000})#, 'eps': 1e-32, 'gtol': 1e-32, 'tol': 1e-32, 'xatol': 1e-16, 'fatol': 1e-16})
+#
+#   print(res)
+#   x0=res.x
+#   res=minimize(simu,args=(n,objs,c_l,c_a,c_v,0), x0=x0, bounds=tup_bds, method='Nelder-Mead', options={'disp': True,'maxfev': 1000000, 'maxiter': 1000000})#, 'eps': 1e-32, 'gtol': 1e-32, 'tol': 1e-32, 'xatol': 1e-16, 'fatol': 1e-16})
+#   print(res)
+#   x=res.x
+#   res=minimize(simu,args=(n,objs,c_l,c_a,c_v,0), x0=x0, bounds=tup_bds, method='Nelder-Mead', options={'disp': True,'maxfev': 1000000, 'maxiter': 1000000})#, 'eps': 1e-32, 'gtol': 1e-32, 'tol': 1e-32, 'xatol': 1e-16, 'fatol': 1e-16})
+#   print(res)
+#   x=res.x
+        for i in range(n):
+#
+            red = vtk.vtkXMLPolyDataReader()
+            red.ReadFromInputStringOn()
+            red.SetInputString(objs[i])
+            red.Update()
+            obj = red.GetOutput()
+#
+            if i < n-1:
+                tmp = x0[7*i:7*i+7]
+            else:
+                tmp=np.zeros(7)
+                tmp[3:]=x0[7*i:7*i+4]
+            [vtp,_,_] = move(obj,tmp[:3],tmp[3:7],c_l,c_a)
+            woutfle(vtp,'lee',i)
+    stop
 #
