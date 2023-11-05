@@ -2,90 +2,116 @@
 import os
 import sys
 import vtk
+import math
+import pickle
 import numpy as np
-import multiprocessing as mp
+import multiprocessing
+from functools import partial
 from scipy.optimize import differential_evolution
+from scipy.optimize import minimize
+from scipy.optimize import dual_annealing
 #
-def conv(xk,convergence):
+from simu_ga import simu_ga
+from simu_nm import simu_nm
 #
-    print(convergence)
+from util import tran
+from util import move
+from util import woutfle
+from util import woutstr
+#
+def arrstrt(n,string,c_l,c_a):
+#
+    objs=[]
+#
+    tfm_0 = vtk.vtkTransform()
+    tfm_0.Translate(0., 0., 0.)
+    tfm_0.Update()
+#
+    for i in range(n):
+#
+        red = vtk.vtkXMLPolyDataReader()
+        red.ReadFromInputStringOn()
+        red.SetInputString(string[i])
+        red.Update()
+        obj = red.GetOutput()
+        bds=obj.GetBounds()
+#
+        bdsx=bds[1]-bds[0]
+        bdsy=bds[3]-bds[2]
+        bdsz=bds[5]-bds[4]
+#
+        maxx=math.floor(200./bdsx)
+        maxy=math.floor(200./bdsy)
+        maxz=math.floor(200./bdsz)
+#
+    shfx = (maxx*bdsx-200.)/2.
+    shfy = (maxy*bdsy-200.)/2.
+#
+    x0=np.zeros(7*n)
+    c=0
+    for k in range(10):
+        for j in range(maxy):
+            for i in range(maxx):
+                if c == n:
+                    break
+                x0[7*c+0]=(-100+bdsx/2+i*bdsx - shfx)/c_l[0]
+                x0[7*c+1]=(-100+bdsy/2+j*bdsy - shfy)/c_l[1]
+                x0[7*c+2]=(-bds[4] +k*bdsz)/c_l[2]
+                c=c+1
+#
+    app = vtk.vtkAppendDataSets()
+    app.SetOutputDataSetType(0)
+    for i in range(n):
+        red = vtk.vtkXMLPolyDataReader()
+        red.ReadFromInputStringOn()
+        red.SetInputString(string[i])
+        red.Update()
+        obj = red.GetOutput()
+        tmp = x0[7*i:7*i+7]
+        [tmp,_,_] = move(obj,tmp[:3],tmp[3:7],c_l,c_a)
+        app.AddInputData(tmp)
+    app.Update()
+    woutfle(app.GetOutput(),'zer',-1)
+#
+    return x0
+#
+def back_nm(xk,args):
+#
+    n=args[0]
+    objs=args[1]
+    c_l=args[2]
+    c_a=args[3]
+    c_v=args[4]
+    [f,c]=simu_nm(xk,n,objs,c_l,c_a,c_v,1)
+    print('%14.3e %6d'%(f,c),flush=True)
+#
     return False
 #
-def tran(vtp,tfm):
+def back_ga(xk,convergence,args):
 #
-    tfm_flt =  vtk.vtkTransformPolyDataFilter()
-    tfm_flt.SetInputData(vtp)
-    tfm_flt.SetTransform(tfm)
-    tfm_flt.Update()
-    vtp = tfm_flt.GetOutput()
+    n=args[0]
+    objs=args[1]
+    c_l=args[2]
+    c_a=args[3]
+    c_v=args[4]
+    [f,c]=simu_ga(xk,n,objs,c_l,c_a,c_v,1)
+    print('%7.3f %14.3e %6d'%(convergence,f,c),flush=True)
 #
-    return vtp
-#
-def move(vtp,trs,rot):
-#
-    tfm = vtk.vtkTransform()
-    tfm.Translate(trs[0], trs[1], trs[2])
-    tfm.RotateWXYZ(rot[0], rot[1], rot[2], rot[3])
-    tfm.Update()
-    tfm_flt =  vtk.vtkTransformPolyDataFilter()
-    tfm_flt.SetInputData(vtp)
-    tfm_flt.SetTransform(tfm)
-    tfm_flt.Update()
-    vtp = tfm_flt.GetOutput()
-#
-    return [vtp,tfm,tfm_flt]
-#
-def wout(vtp,fln,k):
-#
-    writer = vtk.vtkXMLPolyDataWriter()
-    writer.SetInputData(vtp)
-    writer.SetFileName(fln+'_%d.vtp'%k)
-    writer.Update()
-#
-def simu(x,aux):
-#
-    n=aux[0]
-    cols=aux[1]
-    tfms=aux[2]
-    objs=aux[3]
-#
-#   invert the current transform (understood to take it back to ref)
-#
-    bnds=[]
-    m = int(n*(n-1)/2)
+    app = vtk.vtkAppendDataSets()
+    app.SetOutputDataSetType(0)
     for i in range(n):
-        if i < n-1:
-            tfms[i].Translate(x[i*7+0], x[i*7+1], x[i*7+2])
-            tfms[i].RotateWXYZ(x[i*7+3], x[i*7+4], x[i*7+5], x[i*7+6])
-        else:
-            tfms[i].RotateWXYZ(x[i*7+0], x[i*7+1], x[i*7+2], x[i*7+3])
-        vtp=tran(objs[i],tfms[i])
-        bnds.append(vtp.GetBounds())
-    c=0
-    for i in range(m):
-        cols[i].Update()
-        c=c+cols[i].GetNumberOfContacts()
-    for i in range(n):
-        if i < n-1:
-            tfms[i].RotateWXYZ(-x[i*7+3], x[i*7+4], x[i*7+5], x[i*7+6])
-            tfms[i].Translate(-x[i*7+0], -x[i*7+1], -x[i*7+2])
-        else:
-            tfms[i].RotateWXYZ(-x[i*7+0], x[i*7+1], x[i*7+2], x[i*7+3])
+        red = vtk.vtkXMLPolyDataReader()
+        red.ReadFromInputStringOn()
+        red.SetInputString(objs[i])
+        red.Update()
+        obj = red.GetOutput()
+        tmp = xk[7*i:7*i+7]
+        [tmp,_,_] = move(obj,tmp[:3],tmp[3:7],c_l,c_a)
+        app.AddInputData(tmp)
+    app.Update()
+    woutfle(app.GetOutput(),'see',-1)
 #
-    for j in range(n):
-        if j == 0:
-            bds=list(bnds[j][:])
-        else:
-            for i in range(6):
-                if i%2 == 0:
-                    bds[i] = min(bds[i],bnds[j][i])
-                else:
-                    bds[i] = max(bds[i],bnds[j][i])
-#
-    f=c*1e6
-    f=f+(bds[1]-bds[0])*(bds[3]-bds[2])*(bds[5]-bds[4])# + np.linalg.norm(x[:3])**2.
-#
-    return f
+    return False
 #
 if __name__ == "__main__":
 #
@@ -94,60 +120,171 @@ if __name__ == "__main__":
 #
 #   read in parts
 #
-    objs=[]
-    tfms=[]
+    c_a=180.
+    c_v=0.
 #
+#   single part
+#
+    print('Read in %s'%fln)
+#
+    red = vtk.vtkSTLReader()
+    red.SetFileName(fln)
+    red.Update()
+    obj = red.GetOutput()
+#
+    prp = vtk.vtkMassProperties()
+    prp.SetInputData(obj)
+    prp.Update() 
+#
+    print("Volume = ", prp.GetVolume())
+    print("Area= ", prp.GetSurfaceArea())
+#
+    com = vtk.vtkCenterOfMass()
+    com.SetInputData(obj)
+    com.SetUseScalarsAsWeights(False)
+    com.Update()
+    g = np.array(com.GetCenter())
+    bds=obj.GetBounds()
+    c_v=(bds[1]-bds[0])*(bds[3]-bds[2])*(bds[5]-bds[4])
+    [obj,tfm_0,_] = move(obj,-g,[0.,1.,0.,0.],np.array([1.,1.,1.]),1.)
+    obj=woutstr(obj)
+#
+    objs=[obj]*n
+#
+#   1) fit parts in this box, and minimize the height
+#   2) if I want to do minimum volume, how to do bounds... 
+#   please minimise the volume of these 10 parts... again back to start position...
+#
+#   I have N parts, I want to make a equal sided box... 
+#
+    L = np.cbrt(c_v*n)
+    print(L)
+#
+    fopt=1e80
+    xopt=[0.,0.,0.]
+    for k in range(n):
+        for j in range(n):
+            for i in range(n):
+#
+                nk=k+1
+                nj=j+1
+                ni=i+1
+#
+                Lx=ni*(bds[1]-bds[0])
+                Ly=nj*(bds[3]-bds[2])
+                Lz=nk*(bds[5]-bds[4])
+#
+                f = abs(Lx-L) + abs(Ly-L) + abs(Lz-L)
+#
+                if ni*nj*nk>n:
+                    if f < fopt:
+                        fopt=f
+                        xopt=np.array([ni,nj,nk])
+#
+    print(fopt)
+    print(xopt)
+    tmp=np.amax(xopt)
+#
+#   nx = math.ceil(200./(bds[1]-bds[0]))
+#   ny = math.ceil(200./(bds[3]-bds[2]))
+#   nz = math.ceil(200./(bds[5]-bds[4]))
+#
+    c_l=np.array([100.,100.,100.])#  for in box
+    c_l=np.array([tmp*(bds[1]-bds[0]),tmp*(bds[3]-bds[2]),tmp*(bds[5]-bds[4])])#  for min vol.
+#
+    print(c_l)
+#
+    c=0
+    xi = np.zeros(7*n)
+    for k in range(xopt[2]):
+        for j in range(xopt[1]):
+            for i in range(xopt[0]):
+                xi[7*c+0]=-100./c_l[0] + i*(bds[1]-bds[0])/c_l[0]
+                xi[7*c+1]=-100./c_l[1] + j*(bds[3]-bds[2])/c_l[1]
+                xi[7*c+2]=-100./c_l[2] + k*(bds[5]-bds[4])/c_l[2]
+#               if c%3 == 0:
+#                   xi[7*c+3]=1.
+#                   xi[7*c+4]=1.
+#                   xi[7*c+5]=0
+#                   xi[7*c+6]=0
+                c=c+1
+                if c == n:
+                    break
+            if c == n:
+                break
+        if c == n:
+            break
+#
+    l=[-1e0]*(7*n)
+    u=[1e0]*(7*n)
+#
+    app = vtk.vtkAppendDataSets()
+    app.SetOutputDataSetType(0)
     for i in range(n):
-#
-        red = vtk.vtkSTLReader()
-        red.SetFileName(fln)
+        red = vtk.vtkXMLPolyDataReader()
+        red.ReadFromInputStringOn()
+        red.SetInputString(objs[i])
         red.Update()
         obj = red.GetOutput()
+        tmp = xi[7*i:7*i+7]
+        [tmp,_,_] = move(obj,tmp[:3],tmp[3:7],c_l,c_a)
+        app.AddInputData(tmp)
+    app.Update()
+    woutfle(app.GetOutput(),'zer',-1)
 #
-        com = vtk.vtkCenterOfMass()
-        com.SetInputData(obj)
-        com.SetUseScalarsAsWeights(False)
-        com.Update()
-        g = np.array(com.GetCenter())
+#   genetic algorithm
 #
-        [obj,tfm_0,_] = move(obj,-g,[0.,1.,0.,0.])
+#   res=dual_annealing(simu_ga,args=(n,objs,c_l,c_a,c_v,0),bounds=list(zip(l,u)),callback=partial(back_ga,args=(n,objs,c_l,c_a,c_v)))#,workers=4,seed=1
+    bds=[[-1.,1.] for i in range(7*n)]; tup_bds=tuple(bds)
+    res=differential_evolution(simu_ga,args=(n,objs,c_l,c_a,c_v,0),\
+        workers=4,seed=1,polish=False,disp=True,maxiter=1,updating='deferred',\
+        callback=partial(back_ga,args=(n,objs,c_l,c_a,c_v)),bounds=list(zip(l,u)))#,x0=xi)
+    stop
 #
-        [_,tfm,_] = move(obj,[0.,0.,0.],[0.,1.,0.,0.])
+    print(res,flush=True)
+    x0=res.x
 #
-        objs.append(obj)
-        tfms.append(tfm)
-#
-    cols=[]
-#
+    app = vtk.vtkAppendDataSets()
+    app.SetOutputDataSetType(0)
     for i in range(n):
-        for j in range(i+1,n):
+        red = vtk.vtkXMLPolyDataReader()
+        red.ReadFromInputStringOn()
+        red.SetInputString(objs[i])
+        red.Update()
+        obj = red.GetOutput()
+        tmp = x0[7*i:7*i+7]
+        [tmp,_,_] = move(obj,tmp[:3],tmp[3:7],c_l,c_a)
+        app.AddInputData(tmp)
+    app.Update()
+    woutfle(app.GetOutput(),'see',-1)
 #
-            coli = vtk.vtkCollisionDetectionFilter()
-            coli.SetCollisionModeToFirstContact()
-            coli.SetInputData(0, objs[i])
-            coli.SetTransform(0, tfms[i])
-            coli.SetInputData(1, objs[j])
-            coli.SetTransform(1, tfms[j])
-            coli.Update()
+#   nelder mead simplex
 #
-            cols.append(coli)
+    f=1e80
+    fold=0.
+    while abs(f-fold)>0.1:
+        fold=f
+        res=minimize(simu_nm,args=(n,objs,c_l,c_a,c_v,0), x0=x0, bounds=tup_bds, method='Nelder-Mead',\
+            options={'disp': True, 'adaptive': True, 'fatol':1e-1},\
+            callback=partial(back_nm,args=(n,objs,c_l,c_a,c_v)))
+        print(res,flush=True)
+        x0=res.x
+        f=res.fun
+        print(f,x0,flush=True)
 #
-    x0=np.zeros(7*n)
+        app = vtk.vtkAppendDataSets()
+        app.SetOutputDataSetType(0)
+        for i in range(n):
+            red = vtk.vtkXMLPolyDataReader()
+            red.ReadFromInputStringOn()
+            red.SetInputString(objs[i])
+            red.Update()
+            obj = red.GetOutput()
+            tmp = x0[7*i:7*i+7]
+            [tmp,_,_] = move(obj,tmp[:3],tmp[3:7],c_l,c_a)
+            app.AddInputData(tmp)
+        app.Update()
+        woutfle(app.GetOutput(),'lee',-1)
 #
-    l=[-1e3]*(7*(n-1)+4)
-    u=[1e3]*(7*(n-1)+4)
-#
-    aux=[n,cols,tfms,objs]
-#
-    res=differential_evolution(simu,args=(aux,),callback=conv,bounds=list(zip(l,u)),workers=1,seed=69,polish=True,maxiter=1000, init='sobol')
-    print(res)
-    x=res.x
-    for i in range(n):
-        if i < n-1:
-            tmp = x[7*i:7*i+7]
-        else:
-            tmp=np.zeros(7)
-            tmp[3:]=x[7*i:7*i+4]
-        [vtp,_,_] = move(objs[i],tmp[:3],tmp[3:7])
-        wout(vtp,'see',i)
+    stop
 #

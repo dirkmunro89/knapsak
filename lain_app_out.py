@@ -2,12 +2,69 @@
 import os
 import sys
 import vtk
+import math
 import pickle
 import numpy as np
 import multiprocessing
 from functools import partial
 from scipy.optimize import differential_evolution
 from scipy.optimize import minimize
+#
+def arrstrt(n,string,c_l,c_a):
+#
+    objs=[]
+#
+    tfm_0 = vtk.vtkTransform()
+    tfm_0.Translate(0., 0., 0.)
+    tfm_0.Update()
+#
+    for i in range(n):
+#
+        red = vtk.vtkXMLPolyDataReader()
+        red.ReadFromInputStringOn()
+        red.SetInputString(string[i])
+        red.Update()
+        obj = red.GetOutput()
+        bds=obj.GetBounds()
+#
+        bdsx=bds[1]-bds[0]
+        bdsy=bds[3]-bds[2]
+        bdsz=bds[5]-bds[4]
+#
+        maxx=math.floor(200./bdsx)
+        maxy=math.floor(200./bdsy)
+        maxz=math.floor(200./bdsz)
+#
+    shfx = (maxx*bdsx-200.)/2.
+    shfy = (maxy*bdsy-200.)/2.
+#
+    x0=np.zeros(7*n)
+    c=0
+    for k in range(10):
+        for j in range(maxy):
+            for i in range(maxx):
+                if c == n:
+                    break
+                x0[7*c+0]=(-100+bdsx/2+i*bdsx - shfx)/c_l[0]
+                x0[7*c+1]=(-100+bdsy/2+j*bdsy - shfy)/c_l[1]
+                x0[7*c+2]=(-bds[4] +k*bdsz)/c_l[2]
+                c=c+1
+#
+    app = vtk.vtkAppendDataSets()
+    app.SetOutputDataSetType(0)
+    for i in range(n):
+        red = vtk.vtkXMLPolyDataReader()
+        red.ReadFromInputStringOn()
+        red.SetInputString(string[i])
+        red.Update()
+        obj = red.GetOutput()
+        tmp = x0[7*i:7*i+7]
+        [tmp,_,_] = move(obj,tmp[:3],tmp[3:7],c_l,c_a)
+        app.AddInputData(tmp)
+    app.Update()
+    woutfle(app.GetOutput(),'zer',-1)
+#
+    return x0
 #
 def back_nm(xk,args):
 #
@@ -60,7 +117,7 @@ def tran(vtp,tfm):
 def move(vtp,trs,rot,c_l,c_a):
 #
     tfm = vtk.vtkTransform()
-    tfm.Translate(c_l*trs[0], c_l*trs[1], c_l*trs[2])
+    tfm.Translate(c_l[0]*trs[0], c_l[1]*trs[1], c_l[2]*trs[2])
     tfm.RotateWXYZ(c_a*rot[0], rot[1], rot[2], rot[3])
     tfm.Update()
     tfm_flt =  vtk.vtkTransformPolyDataFilter()
@@ -77,7 +134,10 @@ def woutfle(vtp,fln,k):
     writer.SetInputData(vtp)
     writer.SetDataModeToBinary()
     writer.SetCompressorTypeToNone()
-    writer.SetFileName(fln+'_%d.vtp'%k)
+    if k < 0:
+        writer.SetFileName(fln+'_all.vtp'%k)
+    else:
+        writer.SetFileName(fln+'_%d.vtp'%k)
     writer.Update()
 #
 def wout(vtp,fln,k):
@@ -112,7 +172,7 @@ def simu(x,n,string,c_l,c_a,c_v,flg):
         obj = red.GetOutput()
 #
         tfm = vtk.vtkTransform()
-        tfm.Translate(c_l*x[i*7+0], c_l*x[i*7+1], c_l*x[i*7+2])
+        tfm.Translate(c_l[0]*x[i*7+0], c_l[1]*x[i*7+1], c_l[2]*x[i*7+2])
         tfm.RotateWXYZ(c_a*x[i*7+3], x[i*7+4], x[i*7+5], x[i*7+6])
         tfm.Update()
 #
@@ -152,12 +212,12 @@ def simu(x,n,string,c_l,c_a,c_v,flg):
         coli.Update()
         c=c+coli.GetNumberOfContacts()
 #
-    f=bds[5]
+    ext=100.
+    f=bds[5]+ext
 #
     f=f+c*c_v/n/309 #est. volume per triangle
 #
     b=0.
-    ext=100.
     y=0.
     if bds[0]<-ext:
         b=b+(abs(bds[0])-ext)**1.
@@ -171,11 +231,11 @@ def simu(x,n,string,c_l,c_a,c_v,flg):
     if bds[3]>ext:
         b=b+(abs(bds[3])-ext)**1.
         y=y+1
-    if bds[4]<0.:
+    if bds[4]<-ext:
         b=b+(abs(bds[4]))**1.
         y=y+1
 #
-    f=f+b*c_l
+    f=f+b*np.amax(c_l)
 #
     if flg == 0:
         return f
@@ -189,8 +249,7 @@ if __name__ == "__main__":
 #
 #   read in parts
 #
-    c_l=0.
-    c_a=180.0*2
+    c_a=180.0
     objs=[]
     volt=0.
     c_v=0.
@@ -218,25 +277,27 @@ if __name__ == "__main__":
         g = np.array(com.GetCenter())
 #
         bds=obj.GetBounds()
-        c_l=max(bds[1]-bds[0],c_l)
-        c_l=max(bds[3]-bds[2],c_l)
-        c_l=max(bds[5]-bds[4],c_l)
+#       c_l=max(bds[1]-bds[0],c_l)
+#       c_l=max(bds[3]-bds[2],c_l)
+#       c_l=max(bds[5]-bds[4],c_l)
         c_v = c_v+(bds[1]-bds[0])*(bds[3]-bds[2])*(bds[5]-bds[4])
 #
-        [obj,tfm_0,_] = move(obj,-g,[0.,1.,0.,0.],1.,1.)
+        [obj,tfm_0,_] = move(obj,-g,[0.,1.,0.,0.],np.array([1.,1.,1.]),1.)
 #
         obj=wout(obj,'ref',i)
 #
         objs.append(obj)
 #
-    c_l=c_l*n*2
+    c_l=np.array([100.,100.,100.])#c_l*n/4.
 #
     l=[-1e0]*(7*n)
     u=[1e0]*(7*n)
 #
-    res=differential_evolution(simu,args=(n,objs,c_l,c_a,c_v,0),,\
-        callback=partial(back_ga,args=(n,objs,c_l,c_a,c_v)),bounds=list(zip(l,u)),workers=1,seed=1,\
-        polish=False,disp=True,maxiter=100,updating='deferred')
+#   xi=np.zeros()#arrstrt(n,objs,c_l,c_a)
+#
+    res=differential_evolution(simu,args=(n,objs,c_l,c_a,c_v,0),\
+        callback=partial(back_ga,args=(n,objs,c_l,c_a,c_v)),bounds=list(zip(l,u)),workers=4,seed=1,\
+        polish=False,disp=True,maxiter=10,updating='deferred')
 #
     bds=[[-1.,1.] for i in range(7*n)]; tup_bds=tuple(bds)
     print(res,flush=True)
@@ -261,7 +322,7 @@ if __name__ == "__main__":
     while abs(f-fold)>0.1:
         fold=f
         res=minimize(simu,args=(n,objs,c_l,c_a,c_v,0), x0=x0, bounds=tup_bds, method='Nelder-Mead',\
-            options={'disp': True, 'adaptive': True, 'fatol':1e-2},\
+            options={'disp': True, 'adaptive': True, 'fatol':1e-1},\
             callback=partial(back_nm,args=(n,objs,c_l,c_a,c_v)))
         print(res,flush=True)
         x0=res.x
