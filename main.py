@@ -87,6 +87,32 @@ def back_nm(xk,args):
 #
     return False
 #
+def back_sa(xk,fk,context,args):
+#
+    n=args[0]
+    objs=args[1]
+    c_l=args[2]
+    c_a=args[3]
+    c_v=args[4]
+    [f,c]=simu_ga(xk,n,objs,c_l,c_a,c_v,1)
+    print('%3d %14.3e %6d'%(context,f,c),flush=True)
+#
+    app = vtk.vtkAppendDataSets()
+    app.SetOutputDataSetType(0)
+    for i in range(n):
+        red = vtk.vtkXMLPolyDataReader()
+        red.ReadFromInputStringOn()
+        red.SetInputString(objs[i])
+        red.Update()
+        obj = red.GetOutput()
+        tmp = xk[7*i:7*i+7]
+        [tmp,_,_] = move(obj,tmp[:3],tmp[3:7],c_l,c_a)
+        app.AddInputData(tmp)
+    app.Update()
+    woutfle(app.GetOutput(),'see',-1)
+#
+    return False
+#
 def back_ga(xk,convergence,args):
 #
     n=args[0]
@@ -234,11 +260,18 @@ if __name__ == "__main__":
 #
 #   genetic algorithm
 #
-#   res=dual_annealing(simu_ga,args=(n,objs,c_l,c_a,c_v,0),bounds=list(zip(l,u)),callback=partial(back_ga,args=(n,objs,c_l,c_a,c_v)))#,workers=4,seed=1
+#
     bds=[[-1.,1.] for i in range(7*n)]; tup_bds=tuple(bds)
+#
+    res=dual_annealing(simu_ga,args=(n,objs,c_l,c_a,c_v,0),bounds=tup_bds,\
+        callback=partial(back_sa,args=(n,objs,c_l,c_a,c_v)),
+        seed=1,no_local_search=True,x0=xi)#,workers=4,seed=1
+#
+    stop
+#
     res=differential_evolution(simu_ga,args=(n,objs,c_l,c_a,c_v,0),\
         workers=4,seed=1,polish=False,disp=True,maxiter=1,updating='deferred',\
-        callback=partial(back_ga,args=(n,objs,c_l,c_a,c_v)),bounds=list(zip(l,u)))#,x0=xi)
+        callback=partial(back_ga,args=(n,objs,c_l,c_a,c_v)),bounds=tup_bds)#list(zip(l,u)))#,x0=xi)
     stop
 #
     print(res,flush=True)
