@@ -41,6 +41,9 @@ if __name__ == "__main__":
 #
     nprts=int(c/2)
 #
+#   need only one copy of same part; also for colisions; can maybe even reuse object inited
+#   in collision object
+#
     print('-'*80)
     n=0 
     objs_str=[]; prts_bbv=[]
@@ -52,6 +55,35 @@ if __name__ == "__main__":
         red.SetFileName(prts_fln[i])
         red.Update()
         obj_vtp = red.GetOutput()
+#
+        alph=(obj_vtp.GetNumberOfCells()-1000)/obj_vtp.GetNumberOfCells()
+        tmp=vtk.vtkPolyData()
+        tmp.DeepCopy(obj_vtp)
+#
+#       alph=1.
+        angl=10.
+#
+        while tmp.GetNumberOfCells() > 1000:
+#
+            print(tmp.GetNumberOfCells())
+            dec = vtk.vtkQuadricDecimation()
+#           dec = vtk.vtkDecimate()
+#           dec = vtk.vtkDecimatePro()
+            dec.SetInputData(obj_vtp)
+            dec.SetTargetReduction(alph)
+#           dec.SetPreserveTopology(True)
+#           dec.SetFeatureAngle(angl)
+#           dec.SetBoundaryVertexDeletion(False)
+#           dec.SetVolumePreservation(True)
+            dec.Update()
+            tmp=dec.GetOutput()
+            print(alph)
+            alph=alph*1.1
+            angl=angl+5
+#
+        print('Triangles: %d'%tmp.GetNumberOfCells())
+#
+        obj_vtp.DeepCopy(tmp)
 #
         prp = vtk.vtkMassProperties()
         prp.SetInputData(obj_vtp)
@@ -71,6 +103,7 @@ if __name__ == "__main__":
         c_v=max(c_v,bbv)
         prts_bbv.append(bbv)
         print("BBV = ", bbv)
+#
         [obj_vtp,tfm_0,_] = move(obj_vtp,-g,[0.,1.,0.,0.],np.array([1.,1.,1.]),1.)
         obj_str=woutstr(obj_vtp)
         objs_str.extend([obj_str]*prts_num[i])
@@ -147,7 +180,7 @@ if __name__ == "__main__":
         [tmp,_,_] = move(obj,tmp[:3],tmp[3:7],c_l,c_a)
         app.AddInputData(tmp)
 #
-        [_,tfm,_] = move(obj,[0.,0.,0.],[0.,1.,0.,0.],[1.,1.,1.],1.)
+        [_,tfm,_] = move(obj,[0.,0.,0.],[0.,0.,0.,1.],[1.,1.,1.],1.)
         tfms.append(tfm)
 #
     app.Update()
@@ -192,7 +225,7 @@ if __name__ == "__main__":
 #
     cols=[]
 #   
-    print('here')
+    print('herehere')
     c=0
     for i in range(n-1):
         for j in range(i+1,n):
@@ -208,7 +241,7 @@ if __name__ == "__main__":
             coli.Update()
             cols.append(coli)
             c=c+1
-    print('here')
+    print('here here')
 #
 #   res=dual_annealing(simu_ga,args=(n,objs_str,c_l,c_a,c_v,0),bounds=tup_bds,\
     res=dual_annealing(simu_nm_co,args=(n,cols,tfms,objs_vtp,c_l,c_a,c_v,0),bounds=tup_bds,\
