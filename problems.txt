@@ -1,0 +1,25 @@
+-> make little demonstration of collision detection
+
+-> list of parts (first single part) in smallest volume (to compare) and/or minimum height in defined box footprint
+-> list of parts (first single part) in box, unit multiples of box above, to be tesselated. Minimum vol waste in box. can do # of parts iteratively
+
+-> cleaning
+
+-> z bounds
+
+-> keep manner of passing to GA, but change way in which single part is handled.
+
+-> pass / test passing of colision objects to NM; and use available cores to do more NM runs (). But keep simu unified.
+
+-> try simulated annealing again, as well
+
+-> think about mixing up rotations a bit.... NM works, but rather conservative in rotations, maybe that is best in this case.
+
+-> SA seems to mix things up with rotations nicely; look at other global algorithms as well.
+
+-> NM with objects rather than pickled file strings is faster (appended data does not make sense in that case, me thinks)
+
+-> will have to rigurously try and test / keep ability to check collision with appended objects vs 1-1 (in parallel pickle case)
+---> done; appended seems better. what about letting col do the transform?
+
+-> NM / all: what if reference is taken as the grid, not 000? (issues then is rotations about what axis? does it matter? the algorithm searches for what works)
