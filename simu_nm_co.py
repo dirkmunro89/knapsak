@@ -12,21 +12,19 @@ def back_nm_co(xk,args):
     c_l=args[4]
     c_a=args[5]
     c_v=args[6]
-    [f,c]=simu_nm_co(xk,n,objs,cols,tfms,c_l,c_a,c_v,1)
+    [f,c]=simu_nm_co(xk,n,objs,maps,cols,tfms,c_l,c_a,c_v,1)
     print('%14.3e %6d'%(f,c),flush=True)
 #
     return False
 #
-def simu_nm_co(x,n,cols,tfms,objs,c_l,c_a,c_v,flg):
-#
-#   invert the current transform (take it back to ref)
+def simu_nm_co(x,n,cols,tfms,objs,maps,c_l,c_a,c_v,flg):
 #
     bnds=[]
     for i in range(n):
 #
         tfms[i].Translate(c_l[0]*x[i*7+0], c_l[1]*x[i*7+1], c_l[2]*x[i*7+2])
         tfms[i].RotateWXYZ(c_a*x[i*7+3], x[i*7+4], x[i*7+5], x[i*7+6])
-        vtp=tran(objs[i],tfms[i])
+        vtp=tran(objs[maps[i]],tfms[i])
         bnds.append(vtp.GetBounds())
 #
         if i == 0:

@@ -23,3 +23,9 @@
 ---> done; appended seems better. what about letting col do the transform?
 
 -> NM / all: what if reference is taken as the grid, not 000? (issues then is rotations about what axis? does it matter? the algorithm searches for what works)
+
+-> do decimation automatically; with output nevertheless full part
+
+-> merge dup / close verts after quadric decimation
+
+-> dont copy the same part (also when doing file streams), just make a mapping to the col objects

@@ -1,6 +1,26 @@
 #
 import vtk
 #
+def appd(x,nobj,objs_str,objs_num,c_l,c_a):
+#
+    c=0
+    app = vtk.vtkAppendDataSets()
+    app.SetOutputDataSetType(0)
+    for i in range(nobj):
+        red = vtk.vtkXMLPolyDataReader()
+        red.ReadFromInputStringOn()
+        red.SetInputString(objs_str[i])
+        red.Update()
+        obj = red.GetOutput()
+        for j in range(objs_num[i]):
+            tmp = x[7*c:7*c+7]
+            [tmp,_,_] = move(obj,tmp[:3],tmp[3:7],c_l,c_a)
+            app.AddInputData(tmp)
+            c=c+1
+    app.Update()
+#
+    return app
+#
 def tran(vtp,tfm):
 #
     tfm_flt =  vtk.vtkTransformPolyDataFilter()
