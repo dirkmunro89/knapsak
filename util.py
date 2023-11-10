@@ -1,5 +1,88 @@
 #
 import vtk
+import numpy as np
+#
+def appd3(x,nobj,objs_str,objs_num,c_l,c_a):
+#
+    c=0
+    app = vtk.vtkAppendDataSets()
+    app.SetOutputDataSetType(0)
+    for i in range(nobj):
+        red = vtk.vtkXMLPolyDataReader()
+        red.ReadFromInputStringOn()
+        red.SetInputString(objs_str[i])
+        red.Update()
+        obj = red.GetOutput()
+        for j in range(objs_num[i]):
+            tfm=vtk.vtkTransform()
+            tfm.Translate(c_l[0]*x[c*4+0], c_l[1]*x[c*4+1], c_l[2]*x[c*4+2])
+            if x[c*4+3] >= 0 and x[c*4+3] < 1:
+                tfm.RotateWXYZ(0, 1, 0, 0)
+            elif x[c*4+3] >= 1 and x[c*4+3] < 2:
+                tfm.RotateWXYZ(90, 1, 0, 0)
+            elif x[c*4+3] >= 2 and x[c*4+3] < 3:
+                tfm.RotateWXYZ(90, 0, 1, 0)
+            elif x[c*4+3] >= 3 and x[c*4+3] < 4:
+                tfm.RotateWXYZ(90, 0, 0, 1)
+            elif x[c*4+3] >= 4 and x[c*4+3] < 5:
+                tfm.RotateWXYZ(120, 1/np.sqrt(3), -1/np.sqrt(3), 1/np.sqrt(3))
+            elif x[c*4+3] >= 5 and x[c*4+3] < 6:
+                tfm.RotateWXYZ(120, -1/np.sqrt(3), 1/np.sqrt(3), -1/np.sqrt(3))
+            elif x[c*4+3] >= 6 and x[c*4+3] < 7:
+                tfm.RotateWXYZ(0, 1, 0, 0)
+            else:
+                print(x[i*4+3])
+                print('error')
+                exit()
+#           if x[c*4+3] == 0:
+#               tfm.RotateWXYZ(0, 1, 0, 0)
+#           elif x[c*4+3] == 1:
+#               tfm.RotateWXYZ(90, 1, 0, 0)
+#           elif x[c*4+3] == 2:
+#               tfm.RotateWXYZ(90, 0, 1, 0)
+#           elif x[c*4+3] == 3:
+#               tfm.RotateWXYZ(90, 0, 0, 1)
+#           elif x[c*4+3] == 4:
+#               tfm.RotateWXYZ(120, 1/np.sqrt(3), -1/np.sqrt(3), 1/np.sqrt(3))
+#           elif x[c*4+3] == 5:
+#               tfm.RotateWXYZ(120, -1/np.sqrt(3), 1/np.sqrt(3), -1/np.sqrt(3))
+            tfm.Update()
+            tmp=tran(obj,tfm)
+            app.AddInputData(tmp)
+            c=c+1
+    app.Update()
+#
+    return app
+#
+def appd2(x,nobj,objs_vtp,objs_num,c_l,c_a):
+#
+    c=0
+    app = vtk.vtkAppendDataSets()
+    app.SetOutputDataSetType(0)
+    for i in range(nobj):
+        obj = objs_vtp[i]
+        for j in range(objs_num[i]):
+            tfm=vtk.vtkTransform()
+            tfm.Translate(c_l[0]*x[c*4+0], c_l[1]*x[c*4+1], c_l[2]*x[c*4+2])
+            if x[c*4+3] == 0:
+                tfm.RotateWXYZ(0, 1, 0, 0)
+            elif x[c*4+3] == 1:
+                tfm.RotateWXYZ(90, 1, 0, 0)
+            elif x[c*4+3] == 2:
+                tfm.RotateWXYZ(90, 0, 1, 0)
+            elif x[c*4+3] == 3:
+                tfm.RotateWXYZ(90, 0, 0, 1)
+            elif x[c*4+3] == 4:
+                tfm.RotateWXYZ(120, 1/np.sqrt(3), -1/np.sqrt(3), 1/np.sqrt(3))
+            elif x[c*4+3] == 5:
+                tfm.RotateWXYZ(120, -1/np.sqrt(3), 1/np.sqrt(3), -1/np.sqrt(3))
+            tfm.Update()
+            tmp=tran(obj,tfm)
+            app.AddInputData(tmp)
+            c=c+1
+    app.Update()
+#
+    return app
 #
 def appd(x,nobj,objs_str,objs_num,c_l,c_a):
 #
@@ -27,9 +110,9 @@ def tran(vtp,tfm):
     tfm_flt.SetInputData(vtp)
     tfm_flt.SetTransform(tfm)
     tfm_flt.Update()
-    vtp = tfm_flt.GetOutput()
+    tmp = tfm_flt.GetOutput()
 #
-    return vtp
+    return tmp
 #
 def move(vtp,trs,rot,c_l,c_a):
 #

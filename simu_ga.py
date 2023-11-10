@@ -15,6 +15,7 @@ def back_sa(xk,fk,context,args):
     c_l=args[4]
     c_a=args[5]
     c_v=args[6]
+    flns_str=args[7]
     [f,c]=simu_ga(xk,n,nobj,objs_str,objs_num,c_l,c_a,c_v,1)
     print('%3d %14.3e %6d'%(context,f,c),flush=True)
 #
@@ -39,41 +40,55 @@ def back_sa(xk,fk,context,args):
 def back_ga(xk,convergence,args):
 #
     n=args[0]
-    objs=args[1]
-    c_l=args[2]
-    c_a=args[3]
-    c_v=args[4]
-    [f,c]=simu_ga(xk,n,objs,c_l,c_a,c_v,1)
+    nobj=args[1]
+    objs_str=args[2]
+    objs_num=args[3]
+    c_l=args[4]
+    c_a=args[5]
+    c_v=args[6]
+    [f,c]=simu_ga(xk,n,nobj,objs_str,objs_num,c_l,c_a,c_v,1)
     print('%7.3f %14.3e %6d'%(convergence,f,c),flush=True)
 #
-    app = vtk.vtkAppendDataSets()
-    app.SetOutputDataSetType(0)
-    for i in range(n):
-        red = vtk.vtkXMLPolyDataReader()
-        red.ReadFromInputStringOn()
-        red.SetInputString(objs[i])
-        red.Update()
-        obj = red.GetOutput()
-        tmp = xk[7*i:7*i+7]
-        [tmp,_,_] = move(obj,tmp[:3],tmp[3:7],c_l,c_a)
-        app.AddInputData(tmp)
-    app.Update()
+#   app = vtk.vtkAppendDataSets()
+#   app.SetOutputDataSetType(0)
+#   for i in range(n):
+#       red = vtk.vtkXMLPolyDataReader()
+#       red.ReadFromInputStringOn()
+#       red.SetInputString(objs[i])
+#       red.Update()
+#       obj = red.GetOutput()
+#       tmp = xk[7*i:7*i+7]
+#       [tmp,_,_] = move(obj,tmp[:3],tmp[3:7],c_l,c_a)
+#       app.AddInputData(tmp)
+#   app.Update()
+#   woutfle(app.GetOutput(),'see',-1)
+    print(xk)
+    app=appd(xk,nobj,objs_str,objs_num,c_l,c_a)
     woutfle(app.GetOutput(),'see',-1)
 #
     return False
 #
-def simu_ga(x,n,nobj,objs_str,objs_num,c_l,c_a,c_v,flg):
+def simu_ga(x,n,m,objs_str,objs_num,c_l,c_a,c_v,flg):
+    ''' 
+        simu_ga does THIS.
+        x <numpy.ndarray> of length n.
+        n <int> is the number of objects in total (incl. copies).
+        m <int> is the number of unique objects.
+        objs_str <list> is a list of m strings, with each string one unique object's file contents .
+        objs_num <list> is a list of m ints, each the number of copies of objs_str[i] in the build.
+    '''
 #
     tfms=[]
     bnds=[]
     objs=[]
-    apps=[]
 #
     c=0
+    app = vtk.vtkAppendDataSets()
+    app.SetOutputDataSetType(0)
     tfm_0 = vtk.vtkTransform()
     tfm_0.Translate(0., 0., 0.)
     tfm_0.Update()
-    for i in range(nobj):
+    for i in range(m):
 #
 #   `read' in vtp objects from file strings
 #
@@ -114,26 +129,22 @@ def simu_ga(x,n,nobj,objs_str,objs_num,c_l,c_a,c_v,flg):
 #
 #   make appended data sets so that we have n-1 colision checks (this seems to be faster)
 #
+    c=0
     for i in range(n-1):
         app = vtk.vtkAppendDataSets()
         app.SetOutputDataSetType(0)
         for j in range(i+1,n):
             app.AddInputData(objs[j])
             app.Update()
-        apps.append(app.GetOutput())
-#
-#   here is the n-1 colision checks
-#
-    c=0
-    for i in range(n-1):
-#
+#           apps.append(app.GetOutput())
+        aobj=app.GetOutput()
         coli = vtk.vtkCollisionDetectionFilter()
         coli.SetCollisionModeToAllContacts()
 #       coli.SetCollisionModeToHalfContacts()
 #       coli.SetCollisionModeToFirstContact()
         coli.SetInputData(0, objs[i])
         coli.SetTransform(0, tfm_0)
-        coli.SetInputData(1, apps[i])
+        coli.SetInputData(1, aobj)#s[i])
         coli.SetTransform(1, tfm_0)
         coli.Update()
         c=c+coli.GetNumberOfContacts()
