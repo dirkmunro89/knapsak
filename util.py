@@ -16,19 +16,19 @@ def appd3(x,nobj,objs_str,objs_num,c_l,c_a):
         for j in range(objs_num[i]):
             tfm=vtk.vtkTransform()
             tfm.Translate(c_l[0]*x[c*4+0], c_l[1]*x[c*4+1], c_l[2]*x[c*4+2])
-            if x[c*4+3] >= 0 and x[c*4+3] < 1:
+            if x[c*4+3] >= 0-3.5 and x[c*4+3] < 1-3.5:
                 tfm.RotateWXYZ(0, 1, 0, 0)
-            elif x[c*4+3] >= 1 and x[c*4+3] < 2:
-                tfm.RotateWXYZ(90, 1, 0, 0)
-            elif x[c*4+3] >= 2 and x[c*4+3] < 3:
-                tfm.RotateWXYZ(90, 0, 1, 0)
-            elif x[c*4+3] >= 3 and x[c*4+3] < 4:
-                tfm.RotateWXYZ(90, 0, 0, 1)
-            elif x[c*4+3] >= 4 and x[c*4+3] < 5:
+            elif x[c*4+3] >= 1-3.5 and x[c*4+3] < 2-3.5:
                 tfm.RotateWXYZ(120, 1/np.sqrt(3), -1/np.sqrt(3), 1/np.sqrt(3))
-            elif x[c*4+3] >= 5 and x[c*4+3] < 6:
+            elif x[c*4+3] >= 2-3.5 and x[c*4+3] < 3-3.5:
+                tfm.RotateWXYZ(90, 1, 0, 0)
+            elif x[c*4+3] >= 3-3.5 and x[c*4+3] < 4-3.5:
+                tfm.RotateWXYZ(90, 0, 1, 0)
+            elif x[c*4+3] >= 4-3.5 and x[c*4+3] < 5-3.5:
+                tfm.RotateWXYZ(90, 0, 0, 1)
+            elif x[c*4+3] >= 5-3.5 and x[c*4+3] < 6-3.5:
                 tfm.RotateWXYZ(120, -1/np.sqrt(3), 1/np.sqrt(3), -1/np.sqrt(3))
-            elif x[c*4+3] >= 6 and x[c*4+3] < 7:
+            elif x[c*4+3] >= 6-3.5 and x[c*4+3] < 7-3.5:
                 tfm.RotateWXYZ(0, 1, 0, 0)
             else:
                 print(x[i*4+3])

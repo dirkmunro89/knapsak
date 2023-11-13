@@ -10,6 +10,7 @@ from functools import partial
 from scipy.optimize import differential_evolution
 from scipy.optimize import minimize
 from scipy.optimize import dual_annealing
+from vtk.util import numpy_support
 #
 from simu_ga import simu_ga, back_ga, back_sa
 from simu_ga_na import simu_ga_na, back_ga_na
@@ -47,7 +48,7 @@ if __name__ == "__main__":
     n=0 
     objs_str=[]; objs_bbv=[]; objs_vtp=[]
     objs_tfm=[]; objs_map=[]; flns_str=[]
-    objs_cub=[]; cubs_str=[]
+    objs_cub=[]; cubs_str=[]; objs_pts=[]
     for i in range(nobj):
 #
         print('Stack %6d of %10s'%(objs_num[i],objs_fln[i]))
@@ -132,6 +133,7 @@ if __name__ == "__main__":
 #       cub=div.GetOutput()
 #
         objs_cub.append(cub)
+        objs_pts.append(numpy_support.vtk_to_numpy(cub.GetPoints().GetData()))
 #
         cub_str=woutstr(cub)
         cubs_str.append(cub_str)
@@ -150,7 +152,7 @@ if __name__ == "__main__":
     bds=[[-1.,1.] for i in range(4*n)]; 
     its=[False for i in range(4*n)]
     for c in range(n):
-        bds[4*c+3]=[0,6]
+        bds[4*c+3]=[-3,3]
         its[4*c+3]=True
     tup_its=tuple(its)
     tup_bds=tuple(bds)
@@ -176,16 +178,17 @@ if __name__ == "__main__":
 #
     c_l=np.array([200.,200.,200.])#  for in box
     c_a=180
-    res=dual_annealing(simu_bp,args=(n,cols,objs_tfm,objs_cub,objs_map,c_l,c_a,c_v,0),bounds=tup_bds,\
-        callback=partial(back_bp3,args=(n,nobj,cubs_str,objs_num,c_l,c_a,c_v,cols,objs_tfm,objs_map,objs_str,objs_cub)),
+
+    res=dual_annealing(simu_bp,args=(n,cols,objs_tfm,objs_cub,objs_pts,objs_map,c_l,c_a,c_v,0),bounds=tup_bds,\
+        callback=partial(back_bp3,args=(n,nobj,cubs_str,objs_num,c_l,c_a,c_v,cols,objs_tfm,objs_map,objs_str,objs_cub, objs_pts)),
         seed=1,no_local_search=True,maxiter=100)#,x0=xi)#,workers=4,seed=1
-#
+ 
     print(res)
-    stop
-#
-#   res=differential_evolution(simu_bp,args=(n,cols,objs_tfm,objs_cub,objs_map,c_l,c_a,c_v,0),bounds=tup_bds,\
-#       callback=partial(back_bp,args=(n,nobj,objs_str,objs_num,c_l,c_a,c_v,cols,objs_tfm,objs_map,objs_cub)),
-#       seed=1,maxiter=1,polish=True,disp=True,integrality=tup_its,popsize=1)
+#   res=differential_evolution(simu_bp,args=(n,cols,objs_tfm,objs_cub,objs_pts,objs_map,c_l,c_a,c_v,0),bounds=tup_bds,\
+#       callback=partial(back_bp,args=(n,nobj,cubs_str,objs_num,c_l,c_a,c_v,cols,objs_tfm,objs_map,objs_str,objs_cub, objs_pts)),
+#       seed=1,maxiter=1,polish=True,disp=True,popsize=1)#,integrality=tup_its,popsize=1)
+#   print(res)
+#   stop
 #   res=differential_evolution(simu_bp,args=(n,cols,objs_tfm,objs_cub,objs_map,c_l,c_a,c_v,0),\
 #       bounds=tup_bds,
 #       seed=1,maxiter=10000,workers=1,polish=True,disp=True,integrality=tup_its)#,x0=xi)#,workers=4,seed=1
@@ -193,9 +196,10 @@ if __name__ == "__main__":
 #       bounds=tup_bds,callback=partial(back_bp,args=(n,cols,objs_tfm,objs_vtp,objs_map,c_l,c_a,c_v,nobj,objs_str,objs_num)),
 #       seed=1,maxiter=10000,workers=1,polish=True,disp=True,integrality=tup_its)#,x0=xi)#,workers=4,seed=1
     xi=res.x
-    res=minimize(simu_bp,args=(n,cols,objs_tfm,objs_cub,objs_map,c_l,c_a,c_v,0), x0=xi, bounds=tup_bds, method='Nelder-Mead',\
+    res=minimize(simu_bp,args=(n,cols,objs_tfm,objs_cub,objs_pts,objs_map,c_l,c_a,c_v,0), x0=xi, bounds=tup_bds, method='Nelder-Mead',\
         options={'disp': True, 'adaptive': True, 'fatol':1e-1},\
-        callback=partial(back_bp2,args=(n,nobj,cubs_str,objs_num,c_l,c_a,c_v,cols,objs_tfm,objs_map,objs_cub)))
+        callback=partial(back_bp2,args=(n,nobj,cubs_str,objs_num,c_l,c_a,c_v,cols,objs_tfm,objs_map,objs_str,objs_cub, objs_pts)))
+    print(res)
     stop
 #
 #   L = np.cbrt(c_v*n)

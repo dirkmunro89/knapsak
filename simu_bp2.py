@@ -21,7 +21,8 @@ def back_bp3(xk,fk,context,args):
     maps=args[9]
     objs_str=args[10]
     objs=args[11]
-    [f,c,outs]=simu_bp(xk,n,cols,tfms,objs,maps,c_l,c_a,c_v,1)
+    pnts=args[12]
+    [f,c,outs]=simu_bp(xk,n,cols,tfms,objs,pnts,maps,c_l,c_a,c_v,1)
     print('%14.3e %6d %6d'%(fk,c, context),flush=True)
 #
     app=appd3(xk,nobj,cubs_str,objs_num,c_l,c_a)
@@ -35,7 +36,7 @@ def back_bp2(xk,args):
 #
     n=args[0]
     nobj=args[1]
-    objs_str=args[2]
+    cubs_str=args[2]
     objs_num=args[3]
     c_l=args[4]
     c_a=args[5]
@@ -43,11 +44,13 @@ def back_bp2(xk,args):
     cols=args[7]
     tfms=args[8]
     maps=args[9]
-    objs=args[10]
-    [f,c,outs]=simu_bp(xk,n,cols,tfms,objs,maps,c_l,c_a,c_v,1)
+    objs_str=args[10]
+    objs=args[11]
+    pnts=args[12]
+    [f,c,outs]=simu_bp(xk,n,cols,tfms,objs,pnts,maps,c_l,c_a,c_v,1)
     print('%14.3e %6d'%(f,c),flush=True)
 #
-    app=appd3(xk,nobj,objs_str,objs_num,c_l,c_a)
+    app=appd3(xk,nobj,cubs_str,objs_num,c_l,c_a)
     woutfle(app.GetOutput(),'see',-1)
 #
     return False
@@ -56,7 +59,7 @@ def back_bp(xk,convergence,args):
 #
     n=args[0]
     nobj=args[1]
-    objs_str=args[2]
+    cubs_str=args[2]
     objs_num=args[3]
     c_l=args[4]
     c_a=args[5]
@@ -64,52 +67,51 @@ def back_bp(xk,convergence,args):
     cols=args[7]
     tfms=args[8]
     maps=args[9]
-    objs=args[10]
-    [f,c,outs]=simu_bp(xk,n,cols,tfms,objs,maps,c_l,c_a,c_v,1)
+    objs_str=args[10]
+    objs=args[11]
+    pnts=args[12]
+    [f,c,outs]=simu_bp(xk,n,cols,tfms,objs,pnts,maps,c_l,c_a,c_v,1)
     print('%7.3f %14.3e %6d'%(convergence,f,c),flush=True)
 #
-    app=appd3(xk,nobj,objs_str,objs_num,c_l,c_a)
+    app=appd3(xk,nobj,cubs_str,objs_num,c_l,c_a)
     woutfle(app.GetOutput(),'see',-1)
 #
     return False
 #
-def simu_bp(x,n,cols,tfms,objs,maps,c_l,c_a,c_v,flg):
+def simu_bp(x,n,cols,tfms,objs,pnts,maps,c_l,c_a,c_v,flg):
 #
     bnds=[]
     vtps=[]
-    pnts=[]
+    new_pts=[]
+#   pnts=[]
     for i in range(n):
 #
 #       tfms[i].Translate(c_l[0]*x[i*4+0], c_l[1]*x[i*4+1], c_l[2]*x[i*4+2])
-        pts_i=numpy_support.vtk_to_numpy(objs[maps[i]].GetPoints().GetData())
+        pts_i=pnts[maps[i]]#numpy_support.vtk_to_numpy(objs[maps[i]].GetPoints().GetData())
+#       print(pts_i)
+#       pts_i=numpy_support.vtk_to_numpy(objs[maps[i]].GetPoints().GetData())
+#       stop
 #
 #       operate on array of points from outside
 #
-        if x[i*4+3] >= 0 and x[i*4+3] < 1:
+        if x[i*4+3] >= 0-3.5 and x[i*4+3] < 1-3.5:
             new_pts_i=pts_i.copy()
-#           tfms[i].RotateWXYZ(0, 1, 0, 0)
-        elif x[i*4+3] >= 1 and x[i*4+3] < 2:
-            rot=R.from_rotvec(np.pi/2 * np.array([1,0,0])).as_matrix().T
-            new_pts_i = np.dot(pts_i,rot)
-#           tfms[i].RotateWXYZ(90, 1, 0, 0)
-        elif x[i*4+3] >= 2 and x[i*4+3] < 3:
-#           tfms[i].RotateWXYZ(90, 0, 1, 0)
-            rot=R.from_rotvec(np.pi/2 * np.array([0,1,0])).as_matrix().T
-            new_pts_i = np.dot(pts_i,rot)
-        elif x[i*4+3] >= 3 and x[i*4+3] < 4:
-#           tfms[i].RotateWXYZ(90, 0, 0, 1)
-            rot=R.from_rotvec(np.pi/2 * np.array([0,0,1])).as_matrix().T
-            new_pts_i = np.dot(pts_i,rot)
-        elif x[i*4+3] >= 4 and x[i*4+3] < 5:
-#           tfms[i].RotateWXYZ(120, 1/np.sqrt(3), -1/np.sqrt(3), 1/np.sqrt(3))
+        elif x[i*4+3] >= 1-3.5 and x[i*4+3] < 2-3.5:
             rot=R.from_rotvec(2*np.pi/3 * np.array([1/np.sqrt(3),-1/np.sqrt(3),1/np.sqrt(3)])).as_matrix().T
             new_pts_i = np.dot(pts_i,rot)
-        elif x[i*4+3] >= 5 and x[i*4+3] < 6:
-#           tfms[i].RotateWXYZ(120, -1/np.sqrt(3), 1/np.sqrt(3), -1/np.sqrt(3))
+        elif x[i*4+3] >= 2-3.5 and x[i*4+3] < 3-3.5:
+            rot=R.from_rotvec(np.pi/2 * np.array([1,0,0])).as_matrix().T
+            new_pts_i = np.dot(pts_i,rot)
+        elif x[i*4+3] >= 3-3.5 and x[i*4+3] < 4-3.5:
+            rot=R.from_rotvec(np.pi/2 * np.array([0,1,0])).as_matrix().T
+            new_pts_i = np.dot(pts_i,rot)
+        elif x[i*4+3] >= 4-3.5 and x[i*4+3] < 5-3.5:
+            rot=R.from_rotvec(np.pi/2 * np.array([0,0,1])).as_matrix().T
+            new_pts_i = np.dot(pts_i,rot)
+        elif x[i*4+3] >= 5-3.5 and x[i*4+3] < 6-3.5:
             rot=R.from_rotvec(2*np.pi/3 * np.array([-1/np.sqrt(3),1/np.sqrt(3),-1/np.sqrt(3)])).as_matrix().T
             new_pts_i = np.dot(pts_i,rot)
-        elif x[i*4+3] >= 6 and x[i*4+3] < 7:
-#           tfms[i].RotateWXYZ(0, 1, 0, 0)
+        elif x[i*4+3] >= 6-3.5 and x[i*4+3] < 7-3.5:
             new_pts_i=pts_i.copy()
         else:
             print(x[i*4+3])
@@ -118,7 +120,7 @@ def simu_bp(x,n,cols,tfms,objs,maps,c_l,c_a,c_v,flg):
 #
         new_pts_i = new_pts_i + x[4*i:4*i+3]*c_l
 #
-        pnts.append(new_pts_i)
+        new_pts.append(new_pts_i)
 #       vtp=tran(objs[maps[i]],tfms[i])
 #       bnds.append(vtp.GetBounds())
 #       vtps.append(vtp)
@@ -139,10 +141,10 @@ def simu_bp(x,n,cols,tfms,objs,maps,c_l,c_a,c_v,flg):
     for i in range(n-1):
         for j in range(i+1,n):
 #
-            pts_i=pnts[i]#numpy_support.vtk_to_numpy(vtps[i].GetPoints().GetData())
+            pts_i=new_pts[i]#numpy_support.vtk_to_numpy(vtps[i].GetPoints().GetData())
 #           pts_i=numpy_support.vtk_to_numpy(vtps[i].GetPoints().GetData())
             com_i=np.sum(pts_i,axis=0)/8
-            pts_j=pnts[j]#numpy_support.vtk_to_numpy(vtps[j].GetPoints().GetData())
+            pts_j=new_pts[j]#numpy_support.vtk_to_numpy(vtps[j].GetPoints().GetData())
 #           pts_j=numpy_support.vtk_to_numpy(vtps[j].GetPoints().GetData())
             com_j=np.sum(pts_j,axis=0)/8
             bnd_i=bnds[i]
