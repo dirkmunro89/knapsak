@@ -1,39 +1,55 @@
 #
 import vtk
 import numpy as np
+from scipy.spatial.transform import Rotation as R
 #
-def appd3(x,nobj,objs_str,objs_num,c_l,c_a):
+def appd3(x,n,nums,maps,stis,c_l,c_r):
 #
     c=0
     app = vtk.vtkAppendDataSets()
     app.SetOutputDataSetType(0)
-    for i in range(nobj):
+    for n in range(len(nums)):
+#
         red = vtk.vtkXMLPolyDataReader()
         red.ReadFromInputStringOn()
-        red.SetInputString(objs_str[i])
+        red.SetInputString(stis[n])
         red.Update()
-        obj = red.GetOutput()
-        for j in range(objs_num[i]):
+        vtp = red.GetOutput()
+#
+        for j in range(nums[n]):
+#
             tfm=vtk.vtkTransform()
             tfm.Translate(c_l[0]*x[c*4+0], c_l[1]*x[c*4+1], c_l[2]*x[c*4+2])
+#
             if x[c*4+3] >= 0-3.5 and x[c*4+3] < 1-3.5:
-                tfm.RotateWXYZ(0, 1, 0, 0)
+                r=R.from_matrix(c_r[0].T).as_rotvec()
+#               tfm.RotateWXYZ(0, 1, 0, 0)
             elif x[c*4+3] >= 1-3.5 and x[c*4+3] < 2-3.5:
-                tfm.RotateWXYZ(120, 1/np.sqrt(3), -1/np.sqrt(3), 1/np.sqrt(3))
+                r=R.from_matrix(c_r[1].T).as_rotvec()
+#               tfm.RotateWXYZ(120, 1/np.sqrt(3), -1/np.sqrt(3), 1/np.sqrt(3))
             elif x[c*4+3] >= 2-3.5 and x[c*4+3] < 3-3.5:
-                tfm.RotateWXYZ(90, 1, 0, 0)
+                r=R.from_matrix(c_r[2].T).as_rotvec()
+#               tfm.RotateWXYZ(90, 1, 0, 0)
             elif x[c*4+3] >= 3-3.5 and x[c*4+3] < 4-3.5:
-                tfm.RotateWXYZ(90, 0, 1, 0)
+                r=R.from_matrix(c_r[3].T).as_rotvec()
+#               tfm.RotateWXYZ(90, 0, 1, 0)
             elif x[c*4+3] >= 4-3.5 and x[c*4+3] < 5-3.5:
-                tfm.RotateWXYZ(90, 0, 0, 1)
+                r=R.from_matrix(c_r[4].T).as_rotvec()
+#               tfm.RotateWXYZ(90, 0, 0, 1)
             elif x[c*4+3] >= 5-3.5 and x[c*4+3] < 6-3.5:
-                tfm.RotateWXYZ(120, -1/np.sqrt(3), 1/np.sqrt(3), -1/np.sqrt(3))
+                r=R.from_matrix(c_r[5].T).as_rotvec()
+#               tfm.RotateWXYZ(120, -1/np.sqrt(3), 1/np.sqrt(3), -1/np.sqrt(3))
             elif x[c*4+3] >= 6-3.5 and x[c*4+3] < 7-3.5:
-                tfm.RotateWXYZ(0, 1, 0, 0)
+                r=R.from_matrix(c_r[6].T).as_rotvec()
+#               tfm.RotateWXYZ(0, 1, 0, 0)
             else:
                 print(x[i*4+3])
                 print('error')
                 exit()
+#
+            tmp=np.linalg.norm(r)
+            tfm.RotateWXYZ(np.rad2deg(tmp), r[0]/max(tmp,1e-9),r[1]/max(tmp,1e-9),r[2]/max(tmp,1e-9))
+#
 #           if x[c*4+3] == 0:
 #               tfm.RotateWXYZ(0, 1, 0, 0)
 #           elif x[c*4+3] == 1:
@@ -47,7 +63,7 @@ def appd3(x,nobj,objs_str,objs_num,c_l,c_a):
 #           elif x[c*4+3] == 5:
 #               tfm.RotateWXYZ(120, -1/np.sqrt(3), 1/np.sqrt(3), -1/np.sqrt(3))
             tfm.Update()
-            tmp=tran(obj,tfm)
+            tmp=tran(vtp,tfm)
             app.AddInputData(tmp)
             c=c+1
     app.Update()
