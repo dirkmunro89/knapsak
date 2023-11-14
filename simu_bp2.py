@@ -15,9 +15,9 @@ def back_bp3(xk,fk,context,args):
     print('%14.3e %6d %6d'%(fk,c,context),flush=True)
 #
     app=appd3(xk,n,nums,maps,stcs,c_l,c_r)
-    woutfle(app.GetOutput(),'cubes',-1)
+    woutfle(app.GetOutput(),'cubes',0)
     app=appd3(xk,n,nums,maps,stps,c_l,c_r)
-    woutfle(app.GetOutput(),'parts',-1)
+    woutfle(app.GetOutput(),'parts',0)
 #
     if context==2:
         return True

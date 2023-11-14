@@ -52,11 +52,15 @@ def Data(lst):
     tmp0=[]
     tmp1=[]
     tmp2=[]
+    tmp3=[]
+    tmp4=[]
     for i in lst:
         tmp0.append(i.pts)
         tmp1.append(i.stp)
-        tmp2.append(i.stc)
-    return tmp0,tmp1,tmp2
+        tmp2.append(i.vtp)
+        tmp3.append(i.stc)
+        tmp4.append(i.vtc)
+    return tmp0,tmp1,tmp2,tmp3,tmp4
 #
 if __name__ == "__main__":
 #
@@ -150,10 +154,10 @@ if __name__ == "__main__":
         print('Cleaned and decimated: ')
         print('-'*40)
 #
-        if obj_vtp.GetNumberOfCells() > 1000:
+        if obj_vtp.GetNumberOfCells() > 200:
             flt=vtk.vtkQuadricDecimation()
             flt.SetInputData(obj_vtp)
-            flt.SetTargetReduction((obj_vtp.GetNumberOfCells()-1000)/obj_vtp.GetNumberOfCells())
+            flt.SetTargetReduction((obj_vtp.GetNumberOfCells()-200)/obj_vtp.GetNumberOfCells())
             flt.SetVolumePreservation(True)
             flt.Update()
             obj_vtp=flt.GetOutput()
@@ -197,9 +201,9 @@ if __name__ == "__main__":
         obj_bds=obj_vtp.GetBounds()
         obj_bbv=(obj_bds[1]-obj_bds[0])*(obj_bds[3]-obj_bds[2])*(obj_bds[5]-obj_bds[4])
 #
-        print("-axis aligned bounding box: %14.7e"%obj_bds[0])
-        print("                         : %14.7e"%obj_bds[1])
-        print("                         : %14.7e"%obj_bds[2])
+        print("-axis aligned bounding box: %14.7e"%(obj_bds[1]-obj_bds[0]))
+        print("                          : %14.7e"%(obj_bds[3]-obj_bds[2]))
+        print("                          : %14.7e"%(obj_bds[5]-obj_bds[4]))
         print("-with volume: %14.7e"%obj_bbv)
 #
 #       make cube source
@@ -253,6 +257,8 @@ if __name__ == "__main__":
 #
 #   ....
 #
+    print(c_v)
+#
     opt_0_bds=[[-1.,1.] for i in range(4*n)]; 
     opt_0_its=[False for i in range(4*n)]
     for c in range(n):
@@ -261,41 +267,33 @@ if __name__ == "__main__":
     opt_0_bds=tuple(opt_0_bds)
     opt_0_its=tuple(opt_0_its)
 #
-    opt_0_bds=[[-1.,1.] for i in range(7*n)]; 
-    opt_0_its=[False for i in range(7*n)]
-    for c in range(n):
-        opt_0_bds[7*c+3]=[-3,3]
-        opt_0_its[7*c+3]=True
-    opt_0_bds=tuple(opt_0_bds)
-    opt_0_its=tuple(opt_0_its)
-#   l=[-1e0]*(7*n)
-#   u=[1e0]*(7*n)
+    opt_1_bds=[[-1.,1.] for i in range(7*n)]; 
+    opt_1_its=[False for i in range(7*n)]
+    opt_1_bds=tuple(opt_1_bds)
+    opt_1_its=tuple(opt_1_its)
 #
-#   print(objs)
-#   print(maps)
-#   print(objs[maps[0]])
-#   print(objs[maps[1]])
-#   print(objs[maps[2]])
+    [pnts,stps,vtps,stcs,vtcs]=Data(objs)
 #
-#   m = int(n*(n-1)/2) # number of pairs (combination formula)
-#   print('='*40)
-#   print('Making %d collision objects'%m)
-#   print('-'*40)
-#   for i in range(n-1):
-#       for j in range(i+1,n):
+    cols=[]
+    m = int(n*(n-1)/2) # number of pairs (combination formula)
+    print('='*40)
+    print('Making %d collision objects'%m)
+    print('-'*40)
+    for i in range(n-1):
+        for j in range(i+1,n):
 #
-#           col=vtk.vtkCollisionDetectionFilter()
-#           col.SetCollisionModeToAllContacts()
+            col=vtk.vtkCollisionDetectionFilter()
+            col.SetCollisionModeToAllContacts()
 #           col.SetCollisionModeToHalfContacts()
 #           col.SetCollisionModeToFirstContact()
-#           col.SetInputData(0,objs[maps[i]].vtc)
-#           col.SetTransform(0,tfms[i])
-#           col.SetInputData(1,objs[maps[j]].vtc)
-#           col.SetTransform(1,tfms[j])
-#           col.Update()
-#           cols.append(col)
+            col.SetInputData(0,vtps[maps[i]])
+            col.SetTransform(0,tfms[i])
+            col.SetInputData(1,vtps[maps[j]])
+            col.SetTransform(1,tfms[j])
+            col.Update()
+            cols.append(col)
 #
-    c_l=np.array([200.,200.,200.])#  for in box
+    c_l=np.array([100.,100.,100.])#  for in box
     c_a=180
 #
     c_r=[]
@@ -314,14 +312,50 @@ if __name__ == "__main__":
     r=R.from_rotvec(0 * np.array([1.,1.,1.])).as_matrix().T 
     c_r.append(r)
 #
-    [pnts,stps,stcs]=Data(objs)
     res=dual_annealing(simu_bp,args=(n,pnts,maps,c_l,c_r,c_v,0),bounds=opt_0_bds,\
         callback=partial(back_bp3,args=(n,pnts,maps,c_l,c_r,c_v,nums,stps,stcs)),
-        seed=1,no_local_search=False,maxiter=1000)
+        seed=1,no_local_search=True,maxiter=1000)
+#
+    xi=np.zeros(7*n)
+    x=res.x
+    for i in range(n):
+        xi[7*i+0]=x[4*i+0]
+        xi[7*i+1]=x[4*i+1]
+        xi[7*i+2]=x[4*i+2]
+#
+        if x[i*4+3] >= 0-3.5 and x[i*4+3] < 1-3.5:
+            r=R.from_matrix(c_r[0].T).as_rotvec()
+        elif x[i*4+3] >= 1-3.5 and x[i*4+3] < 2-3.5:
+            r=R.from_matrix(c_r[1].T).as_rotvec()
+        elif x[i*4+3] >= 2-3.5 and x[i*4+3] < 3-3.5:
+            r=R.from_matrix(c_r[2].T).as_rotvec()
+        elif x[i*4+3] >= 3-3.5 and x[i*4+3] < 4-3.5:
+            r=R.from_matrix(c_r[3].T).as_rotvec()
+        elif x[i*4+3] >= 4-3.5 and x[i*4+3] < 5-3.5:
+            r=R.from_matrix(c_r[4].T).as_rotvec()
+        elif x[i*4+3] >= 5-3.5 and x[i*4+3] < 6-3.5:
+            r=R.from_matrix(c_r[5].T).as_rotvec()
+        elif x[i*4+3] >= 6-3.5 and x[i*4+3] < 7-3.5:
+            r=R.from_matrix(c_r[6].T).as_rotvec()
+#
+        tmp=np.linalg.norm(r)
+        t=np.array([np.rad2deg(tmp)/c_a, r[0]/max(tmp,1e-9),r[1]/max(tmp,1e-9),r[2]/max(tmp,1e-9)])
+        xi[7*i+3]=t[0]
+        xi[7*i+4]=t[1]
+        xi[7*i+5]=t[2]
+        xi[7*i+6]=t[3]
 #
     print(res)
+#
+    res=dual_annealing(simu_nm_co,args=(n,cols,tfms,vtps,maps,c_l,c_a,c_v,0),bounds=opt_1_bds,\
+        callback=partial(back_nm_co,args=(n,cols,tfms,vtps,maps,c_l,c_a,c_v,nums,stps,stcs)),
+        seed=1,no_local_search=True,maxiter=1000,x0=xi)#,workers=4,seed=1
+#
+    print(res)
+#
+    back_nm_co(res.x,0,0,[n,cols,tfms,vtps,maps,c_l,c_a,c_v,nums,stps,stcs])
+#
     stop
-#   res=differential_evolution(simu_bp,args=(n,cols,prts_tfm,objs_cub,objs_pts,prts_map,c_l,c_a,c_v,0),bounds=tup_bds,\
 #       callback=partial(back_bp,args=(n,nobj,cubs_str,objs_num,c_l,c_a,c_v,cols,prts_tfm,prts_map,objs_str,objs_cub, objs_pts)),
 #       seed=1,maxiter=1,polish=True,disp=True,popsize=1)#,integrality=tup_its,popsize=1)
 #   print(res)
@@ -449,8 +483,6 @@ if __name__ == "__main__":
 #
 #
     cols=[]
-#   
-    print('herehere')
     c=0
     for i in range(n-1):
         for j in range(i+1,n):
@@ -477,6 +509,7 @@ if __name__ == "__main__":
         its[7*c+6]=True
     tup_its=tuple(its)
 #
+#
 #   res=differential_evolution(simu_ga_na,args=(n,objs_str,c_l,c_a,c_v,0),\
 #       workers=4,seed=1,polish=False,disp=True,maxiter=1,updating='deferred',\
 #       callback=partial(back_ga_na,args=(n,objs_str,c_l,c_a,c_v)),bounds=tup_bds)#list(zip(l,u)))#,x0=xi)
@@ -487,9 +520,6 @@ if __name__ == "__main__":
     print(res)
     stop
 #
-    res=dual_annealing(simu_nm_co,args=(n,cols,prts_tfm,objs_vtp,prts_map,c_l,c_a,c_v,0),bounds=tup_bds,\
-        callback=partial(back_sa,args=(n,nobj,objs_str,objs_num,c_l,c_a,c_v,objs_str)),
-        seed=1,no_local_search=True)#,x0=xi)#,workers=4,seed=1
     stop
 #
     f=1e80

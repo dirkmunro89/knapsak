@@ -50,18 +50,6 @@ def appd3(x,n,nums,maps,stis,c_l,c_r):
             tmp=np.linalg.norm(r)
             tfm.RotateWXYZ(np.rad2deg(tmp), r[0]/max(tmp,1e-9),r[1]/max(tmp,1e-9),r[2]/max(tmp,1e-9))
 #
-#           if x[c*4+3] == 0:
-#               tfm.RotateWXYZ(0, 1, 0, 0)
-#           elif x[c*4+3] == 1:
-#               tfm.RotateWXYZ(90, 1, 0, 0)
-#           elif x[c*4+3] == 2:
-#               tfm.RotateWXYZ(90, 0, 1, 0)
-#           elif x[c*4+3] == 3:
-#               tfm.RotateWXYZ(90, 0, 0, 1)
-#           elif x[c*4+3] == 4:
-#               tfm.RotateWXYZ(120, 1/np.sqrt(3), -1/np.sqrt(3), 1/np.sqrt(3))
-#           elif x[c*4+3] == 5:
-#               tfm.RotateWXYZ(120, -1/np.sqrt(3), 1/np.sqrt(3), -1/np.sqrt(3))
             tfm.Update()
             tmp=tran(vtp,tfm)
             app.AddInputData(tmp)
@@ -70,14 +58,14 @@ def appd3(x,n,nums,maps,stis,c_l,c_r):
 #
     return app
 #
-def appd2(x,nobj,objs_vtp,objs_num,c_l,c_a):
+def appd2(x,n,nums,maps,vtis,c_l,c_r):
 #
     c=0
     app = vtk.vtkAppendDataSets()
     app.SetOutputDataSetType(0)
-    for i in range(nobj):
-        obj = objs_vtp[i]
-        for j in range(objs_num[i]):
+    for i in range(len(nums)):
+#       obj=vtis[i]
+        for j in range(nums[i]):
             tfm=vtk.vtkTransform()
             tfm.Translate(c_l[0]*x[c*4+0], c_l[1]*x[c*4+1], c_l[2]*x[c*4+2])
             if x[c*4+3] == 0:
@@ -100,21 +88,30 @@ def appd2(x,nobj,objs_vtp,objs_num,c_l,c_a):
 #
     return app
 #
-def appd(x,nobj,objs_str,objs_num,c_l,c_a):
+def appd(x,n,nums,maps,stis,c_l,c_a):
 #
     c=0
-    app = vtk.vtkAppendDataSets()
+    app=vtk.vtkAppendDataSets()
     app.SetOutputDataSetType(0)
-    for i in range(nobj):
-        red = vtk.vtkXMLPolyDataReader()
+    for i in range(len(nums)):
+        red=vtk.vtkXMLPolyDataReader()
         red.ReadFromInputStringOn()
-        red.SetInputString(objs_str[i])
+        red.SetInputString(stis[i])
         red.Update()
-        obj = red.GetOutput()
-        for j in range(objs_num[i]):
-            tmp = x[7*c:7*c+7]
-            [tmp,_,_] = move(obj,tmp[:3],tmp[3:7],c_l,c_a)
-            app.AddInputData(tmp)
+        vtp=red.GetOutput()
+        for j in range(nums[i]):
+            tmp=x[7*c:7*c+7]
+            tfm=vtk.vtkTransform()
+            tfm.Translate(c_l[0]*tmp[0], c_l[1]*tmp[1], c_l[2]*tmp[2])
+            tfm.RotateWXYZ(c_a*tmp[3], tmp[4], tmp[5], tmp[6])
+            tfm.Update()
+            flt=vtk.vtkTransformPolyDataFilter()
+            flt.SetInputData(vtp)
+            flt.SetTransform(tfm)
+            flt.Update()
+            tmp_vtp=flt.GetOutput()
+#           [vtp,_,_] = move(vtp,tmp[:3],tmp[3:7],c_l,c_a)
+            app.AddInputData(tmp_vtp)
             c=c+1
     app.Update()
 #
