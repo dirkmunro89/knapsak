@@ -7,6 +7,20 @@ from util import tran, appd3, woutfle
 #
 #   the default is premultiply; hence it looks strange that translation is before rotation
 #
+def back_bp4(xk,args):
+#
+    [n,pnts,maps,c_l,c_r,c_v,nums,stps,stcs]=args
+#
+    [f,c]=simu_bp(xk,n,pnts,maps,c_l,c_r,c_v,1)
+    print('%14.3e %6d'%(f,c),flush=True)
+#
+    app=appd3(xk,n,nums,maps,stcs,c_l,c_r)
+    woutfle(app.GetOutput(),'cubes',0)
+    app=appd3(xk,n,nums,maps,stps,c_l,c_r)
+    woutfle(app.GetOutput(),'parts',0)
+#
+    return False
+#
 def back_bp3(xk,fk,context,args):
 #
     [n,pnts,maps,c_l,c_r,c_v,nums,stps,stcs]=args
@@ -23,26 +37,17 @@ def back_bp3(xk,fk,context,args):
         return True
     return False
 #
-def back_bp2(xk,args):
+def back_bp2(xk,convergence,args):
 #
-    n=args[0]
-    nobj=args[1]
-    cubs_str=args[2]
-    objs_num=args[3]
-    c_l=args[4]
-    c_a=args[5]
-    c_v=args[6]
-    cols=args[7]
-    tfms=args[8]
-    maps=args[9]
-    objs_str=args[10]
-    objs=args[11]
-    pnts=args[12]
-    [f,c,outs]=simu_bp(xk,n,cols,tfms,objs,pnts,maps,c_l,c_a,c_v,1)
-    print('%14.3e %6d'%(f,c),flush=True)
+    [n,pnts,maps,c_l,c_r,c_v,nums,stps,stcs]=args
 #
-    app=appd3(xk,nobj,cubs_str,objs_num,c_l,c_a)
-    woutfle(app.GetOutput(),'see',-1)
+    [f,c]=simu_bp(xk,n,pnts,maps,c_l,c_r,c_v,1)
+    print('%14.3e %6d %14.3e'%(f,c,convergence),flush=True)
+#
+    app=appd3(xk,n,nums,maps,stcs,c_l,c_r)
+    woutfle(app.GetOutput(),'cubes',0)
+    app=appd3(xk,n,nums,maps,stps,c_l,c_r)
+    woutfle(app.GetOutput(),'parts',0)
 #
     return False
 #
@@ -135,7 +140,7 @@ def simu_bp(xk,n,pnts,maps,c_l,c_r,c_v,flg):
 #   f=bds[5]+ext
     f=(bds[1]-bds[0])*(bds[3]-bds[2])*(bds[5]-bds[4])/c_v
 #
-    f=f+c #est. volume per triangle
+    f=f+c#est. volume per triangle
 #
 #   b=0.
 #   y=0.

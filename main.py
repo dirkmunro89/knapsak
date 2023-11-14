@@ -11,6 +11,8 @@ import multiprocessing
 from functools import partial
 from scipy.optimize import differential_evolution
 from scipy.optimize import minimize
+from scipy.optimize import shgo
+from scipy.optimize import direct
 from scipy.optimize import dual_annealing
 from vtk.util import numpy_support
 #
@@ -18,7 +20,7 @@ from simu_ga import simu_ga, back_ga, back_sa
 from simu_ga_na import simu_ga_na, back_ga_na
 from simu_nm import simu_nm, back_nm
 from simu_nm_co import simu_nm_co, back_nm_co
-from simu_bp2 import simu_bp, back_bp, back_bp2, back_bp3
+from simu_bp2 import simu_bp, back_bp, back_bp2, back_bp3, back_bp4
 #
 from util import tran
 from util import move
@@ -293,7 +295,7 @@ if __name__ == "__main__":
             col.Update()
             cols.append(col)
 #
-    c_l=np.array([100.,100.,100.])#  for in box
+    c_l=np.array([200.,200.,200.])#  for in box
     c_a=180
 #
     c_r=[]
@@ -312,9 +314,33 @@ if __name__ == "__main__":
     r=R.from_rotvec(0 * np.array([1.,1.,1.])).as_matrix().T 
     c_r.append(r)
 #
-    res=dual_annealing(simu_bp,args=(n,pnts,maps,c_l,c_r,c_v,0),bounds=opt_0_bds,\
-        callback=partial(back_bp3,args=(n,pnts,maps,c_l,c_r,c_v,nums,stps,stcs)),
-        seed=1,no_local_search=True,maxiter=1000)
+#   clean the simus; make parallel (appended data) version for full collision
+#   make heuristic packing (SA paper)
+#   Where and how to use Nelder mead? include it.
+#   play with prusa slicer... maybe add a command line call
+#   think about problem... in SLM height is a thing... in FDM as well, considering failure 
+#   (chance to shift / to misalign)... 
+#   I have seen it
+#
+    if 1 == 1:
+        res=dual_annealing(simu_bp,args=(n,pnts,maps,c_l,c_r,c_v,0),bounds=opt_0_bds,\
+            callback=partial(back_bp3,args=(n,pnts,maps,c_l,c_r,c_v,nums,stps,stcs)),
+            seed=1,no_local_search=False,maxiter=1000)
+    elif 2 == 1:
+        res=differential_evolution(simu_bp,args=(n,pnts,maps,c_l,c_r,c_v,0),bounds=opt_0_bds,\
+            callback=partial(back_bp2,args=(n,pnts,maps,c_l,c_r,c_v,nums,stps,stcs)),\
+            seed=1,maxiter=1000,workers=4,popsize=1,updating='deferred',polish=False,disp=False,\
+            integrality=opt_0_its)
+    elif 3 == 1:
+        res=shgo(simu_bp,args=(n,pnts,maps,c_l,c_r,c_v,0),bounds=opt_0_bds,\
+            callback=partial(back_bp4,args=(n,pnts,maps,c_l,c_r,c_v,nums,stps,stcs)),\
+            workers=4,n=100,iters=100,options={'disp': True})
+    else:
+        res=direct(simu_bp,args=(n,pnts,maps,c_l,c_r,c_v,0),bounds=opt_0_bds,locally_biased=False,\
+            callback=partial(back_bp4,args=(n,pnts,maps,c_l,c_r,c_v,nums,stps,stcs)),eps=1.)
+#
+    print(res)
+    stop
 #
     xi=np.zeros(7*n)
     x=res.x
@@ -349,7 +375,7 @@ if __name__ == "__main__":
 #
     res=dual_annealing(simu_nm_co,args=(n,cols,tfms,vtps,maps,c_l,c_a,c_v,0),bounds=opt_1_bds,\
         callback=partial(back_nm_co,args=(n,cols,tfms,vtps,maps,c_l,c_a,c_v,nums,stps,stcs)),
-        seed=1,no_local_search=True,maxiter=1000,x0=xi)#,workers=4,seed=1
+        seed=1,no_local_search=True,maxiter=100,x0=xi,initial_temp=1.)#,workers=4,seed=1
 #
     print(res)
 #
