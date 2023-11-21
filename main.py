@@ -1,6 +1,4 @@
 #
-from scipy.spatial.transform import Rotation as R
-
 import os
 import sys
 import vtk
@@ -8,311 +6,149 @@ import math
 import pickle
 import numpy as np
 import multiprocessing
+#
 from functools import partial
 from scipy.optimize import differential_evolution
 from scipy.optimize import minimize
 from scipy.optimize import shgo
+from scipy.optimize import brute
 from scipy.optimize import direct
 from scipy.optimize import dual_annealing
+from scipy.optimize import basinhopping
+from scipy.optimize import Bounds
 from vtk.util import numpy_support
 #
 from simu_ga import simu_ga, back_ga, back_sa
 from simu_ga_na import simu_ga_na, back_ga_na
 from simu_nm import simu_nm, back_nm
-from simu_nm_co import simu_nm_co, back_nm_co
-from simu_bp2 import simu_bp, back_bp, back_bp2, back_bp3, back_bp4
+from simu_co import simu_co, back_co
+#
+from init import init, pretfms
+#
+from simu_obp import simu_obp, back_bp, back_de, back_da, back_x, back_bh
+from simu_obp_co import simu_obp_co, back_da_co
 #
 from util import tran
 from util import move
-from util import appd
+from util import appdata
 from util import woutfle
 from util import woutstr
 #
-class Part:
-#
-    def __init__(self,idn,obj,tfm):
-        self.idn=idn
-        self.obj=obj
-        self.tfm=tfm
-#
-class Object:
-#
-    def __init__(self,idn,vtp_0,stp_0,cen_0,vtp,stp,cen,vtc,stc,pts):
-        self.idn=idn
-        self.vtp_0=vtp_0
-        self.stp_0=stp_0
-        self.cen_0=cen_0
-        self.vtp=vtp
-        self.stp=stp
-        self.cen=cen
-        self.vtc=vtc
-        self.stc=stc
-        self.pts=pts
-#
-def Data(lst):
-#
-    tmp0=[]
-    tmp1=[]
-    tmp2=[]
-    tmp3=[]
-    tmp4=[]
-    for i in lst:
-        tmp0.append(i.pts)
-        tmp1.append(i.stp)
-        tmp2.append(i.vtp)
-        tmp3.append(i.stc)
-        tmp4.append(i.vtc)
-    return tmp0,tmp1,tmp2,tmp3,tmp4
+# Note: 'object' and 'instance' is
 #
 if __name__ == "__main__":
-#
-#   parameters
-#
-    c_a=180.
-    c_v=0.
-    c_l=-1 # estimated if negative
 #
 #   get input arguments 
 #   - number to be stacked and
 #   - path to file
 #
+    cpus=4
+    meth=sys.argv[1]
+#
     c=0
     nums=[]; flns=[]
     while True:
         try:
-            nums.append(int(sys.argv[c+1]))
-            flns.append(sys.argv[c+2])
+            nums.append(int(sys.argv[c+2]))
+            flns.append(sys.argv[c+3])
             c=c+2
         except: break
 #
     nobj=int(c/2) # number of unique parts (objects)
 #
-    n=0 
-    js_str=[]; objs_bbv=[]; objs_vtp=[]
-    flns_str=[]; objs_cub=[]
-    cubs_str=[]; objs_pts=[]
-#
     objs=[]; tfms=[]; maps=[]
-    cols=[]
 #
-#   for each object
+    n=0 
+    c_v_0=0.
+    c_v_1=0.
 #
     for i in range(nobj):
-#
-#       obj=Object()
 #
         print('='*40)
         print('Pack %2d of %10s: '%(nums[i],flns[i]))
         print('-'*40)
 #
-#       read the stl into polydata
+#       make the object from the input file
 #
-        flt=vtk.vtkSTLReader()
-        flt.SetFileName(flns[i])
-        flt.Update()
-        obj_vtp_0=flt.GetOutput()
-        obj_stp_0=woutstr(obj_vtp_0) # file content string; for parallelization
+        obj=init(i,flns[i])
 #
-#       properties
+#       append to a list of the unique objects in the build
 #
-        flt=vtk.vtkCenterOfMass()
-        flt.SetInputData(obj_vtp_0)
-        flt.SetUseScalarsAsWeights(False)
-        flt.Update()
-        obj_cen_0=flt.GetCenter()
-#
-        prp = vtk.vtkMassProperties()
-        prp.SetInputData(obj_vtp_0)
-        prp.Update() 
-        obj_vol_0=prp.GetVolume()
-        obj_are_0=prp.GetSurfaceArea()
-#
-        print('-points   : %14d'%obj_vtp_0.GetNumberOfPoints())
-        print('-cells    : %14d'%obj_vtp_0.GetNumberOfCells())
-        print('-centroid : %14.7e'%(obj_cen_0[0]))
-        print('          : %14.7e'%(obj_cen_0[1]))
-        print('          : %14.7e'%(obj_cen_0[2]))
-        print("-area     : %14.7e"%obj_are_0)
-        print("-volume   : %14.7e"%obj_vol_0)
-#
-#       clean it
-#
-        flt=vtk.vtkCleanPolyData()
-        flt.SetInputData(obj_vtp_0)
-        flt.SetTolerance(1e-4) # fraction of BB diagonal
-        flt.Update()
-        obj_vtp=flt.GetOutput()
-#
-#       only triangles
-#
-        flt=vtk.vtkTriangleFilter()
-        flt.SetInputData(obj_vtp)
-        flt.SetPassLines(False)
-        flt.SetPassVerts(False)
-        flt.Update()
-        obj_vtp=flt.GetOutput()
-#
-        print('-'*40)
-        print('Cleaned and decimated: ')
-        print('-'*40)
-#
-        if obj_vtp.GetNumberOfCells() > 200:
-            flt=vtk.vtkQuadricDecimation()
-            flt.SetInputData(obj_vtp)
-            flt.SetTargetReduction((obj_vtp.GetNumberOfCells()-200)/obj_vtp.GetNumberOfCells())
-            flt.SetVolumePreservation(True)
-            flt.Update()
-            obj_vtp=flt.GetOutput()
-#
-#       properties again
-#
-        flt=vtk.vtkCenterOfMass()
-        flt.SetInputData(obj_vtp)
-        flt.SetUseScalarsAsWeights(False)
-        flt.Update()
-        obj_cen=flt.GetCenter()
-#
-        prp = vtk.vtkMassProperties()
-        prp.SetInputData(obj_vtp)
-        prp.Update() 
-        obj_vol=prp.GetVolume()
-        obj_are=prp.GetSurfaceArea()
-#
-        print('-points   : %14d'%obj_vtp.GetNumberOfPoints())
-        print('-cells    : %14d'%obj_vtp.GetNumberOfCells())
-        print('-centroid : %14.7e'%(obj_cen[0]))
-        print('          : %14.7e'%(obj_cen[1]))
-        print('          : %14.7e'%(obj_cen[2]))
-        print("-area     : %14.7e"%obj_are)
-        print("-volume   : %14.7e"%obj_vol)
-#
-#       transform updated object so that its centroid is 0,0,0
-#
-        tfm_0=vtk.vtkTransform()
-        tfm_0.Translate(-obj_cen[0], -obj_cen[1], -obj_cen[2])
-        tfm_0.Update()
-        flt=vtk.vtkTransformPolyDataFilter()
-        flt.SetInputData(obj_vtp)
-        flt.SetTransform(tfm_0)
-        flt.Update()
-        obj_vtp=flt.GetOutput()
-        obj_stp=woutstr(obj_vtp)
-#
-#       get axis aligned bounds and bounding box volume
-#
-        obj_bds=obj_vtp.GetBounds()
-        obj_bbv=(obj_bds[1]-obj_bds[0])*(obj_bds[3]-obj_bds[2])*(obj_bds[5]-obj_bds[4])
-#
-        print("-axis aligned bounding box: %14.7e"%(obj_bds[1]-obj_bds[0]))
-        print("                          : %14.7e"%(obj_bds[3]-obj_bds[2]))
-        print("                          : %14.7e"%(obj_bds[5]-obj_bds[4]))
-        print("-with volume: %14.7e"%obj_bbv)
-#
-#       make cube source
-#
-        src=vtk.vtkCubeSource()
-        src.SetBounds(obj_bds)
-        src.Update()
-        obj_vtc=src.GetOutput()
-#
-#       clean it
-#
-        flt=vtk.vtkCleanPolyData()
-        flt.SetInputData(obj_vtc)
-        flt.SetTolerance(1e-4) # fraction of BB diagonal
-        flt.Update()
-        obj_vtc=flt.GetOutput()
-#
-#       triangles
-#
-        flt=vtk.vtkTriangleFilter()
-        flt.SetInputData(obj_vtc)
-        flt.Update()
-        obj_vtc=flt.GetOutput()
-        obj_stc=woutstr(obj_vtc)
-#
-#       get bounding box points
-#
-        obj_pts=numpy_support.vtk_to_numpy(obj_vtc.GetPoints().GetData())
-#
-#       make the object
-#       
-        obj=Object(i,obj_vtp_0,obj_stp_0,obj_cen_0,obj_vtp,obj_stp,obj_cen,obj_vtc,obj_stc,obj_pts)
         objs.append(obj)
 #
-#       make some things for each _part_
-#       add up some things
+#       make a transform for each instance of the object in the build
+#       and a list which maps back to the object id
 #
         for j in range(nums[i]):
 #
-#           make a transform
-#
             tfm=vtk.vtkTransform()
+            tfm.PostMultiply()
             tfm.Translate(0., 0., 0.)
             tfm.Update()
-#
             tfms.append(tfm)
+#
             maps.append(i)
 #
-            c_v=c_v+obj_bbv
+            c_v_0=c_v_0+obj.bbv
+            c_v_1=c_v_1+obj.vol
             n=n+1
 #
-#   ....
-#
-    print(c_v)
-#
-    opt_0_bds=[[-1.,1.] for i in range(4*n)]; 
-    opt_0_its=[False for i in range(4*n)]
-    for c in range(n):
-        opt_0_bds[4*c+3]=[-3,3]
-        opt_0_its[4*c+3]=True
-    opt_0_bds=tuple(opt_0_bds)
-    opt_0_its=tuple(opt_0_its)
-#
-    opt_1_bds=[[-1.,1.] for i in range(7*n)]; 
-    opt_1_its=[False for i in range(7*n)]
-    opt_1_bds=tuple(opt_1_bds)
-    opt_1_its=tuple(opt_1_its)
-#
-    [pnts,stps,vtps,stcs,vtcs]=Data(objs)
+    print('='*40)
+    print('Total volume of AABB volumes : %7.3e'%(c_v_0))
+    print('Total volume                 : %7.3e'%(c_v_1))
+    print('Efficiency                   : %7.3e'%(c_v_1/c_v_0))
+    print('='*40)
 #
     cols=[]
     m = int(n*(n-1)/2) # number of pairs (combination formula)
-    print('='*40)
+#
     print('Making %d collision objects'%m)
     print('-'*40)
     for i in range(n-1):
         for j in range(i+1,n):
 #
             col=vtk.vtkCollisionDetectionFilter()
-            col.SetCollisionModeToAllContacts()
+#           col.SetCollisionModeToAllContacts()
 #           col.SetCollisionModeToHalfContacts()
-#           col.SetCollisionModeToFirstContact()
-            col.SetInputData(0,vtps[maps[i]])
+            col.SetCollisionModeToFirstContact()
+            col.SetInputData(0,objs[maps[i]].vtp)
             col.SetTransform(0,tfms[i])
-            col.SetInputData(1,vtps[maps[j]])
+            col.SetInputData(1,objs[maps[j]].vtp)
             col.SetTransform(1,tfms[j])
             col.Update()
             cols.append(col)
 #
-    c_l=np.array([200.,200.,200.])#  for in box
+    pnts = [obj.pts for obj in objs]
+    stps = [obj.stp for obj in objs]
+    vtps = [obj.vtp for obj in objs]
+    stcs = [obj.stc for obj in objs]
+    vtcs = [obj.vtc for obj in objs]
+#
+#   parameters
+#
+    c_l=np.array([200.,200.,200.]) # for in box
     c_a=180
 #
-    c_r=[]
-    r=R.from_rotvec(0 * np.array([1.,1.,1.])).as_matrix().T 
-    c_r.append(r)
-    r=R.from_rotvec(2*np.pi/3 * np.array([1/np.sqrt(3),-1/np.sqrt(3),1/np.sqrt(3)])).as_matrix().T
-    c_r.append(r)
-    r=R.from_rotvec(np.pi/2 * np.array([1,0,0])).as_matrix().T
-    c_r.append(r)
-    r=R.from_rotvec(np.pi/2 * np.array([0,1,0])).as_matrix().T
-    c_r.append(r)
-    r=R.from_rotvec(np.pi/2 * np.array([0,0,1])).as_matrix().T
-    c_r.append(r)
-    r=R.from_rotvec(2*np.pi/3 * np.array([-1/np.sqrt(3),1/np.sqrt(3),-1/np.sqrt(3)])).as_matrix().T
-    c_r.append(r)
-    r=R.from_rotvec(0 * np.array([1.,1.,1.])).as_matrix().T 
-    c_r.append(r)
+#   set up predefined transforms
+#
+    c_r=pretfms()
+#
+#   set bounds and integer variables
+#
+    opt_0_bds=[[-1.,1.] for i in range(4*n)]; 
+    opt_0i_bds=[[-1e3,1e3] for i in range(4*n)]; 
+    opt_0_its=[False for i in range(4*n)]
+    for c in range(n):
+        opt_0_bds[4*c]=[-3,3]
+        opt_0_its[4*c]=True
+    opt_0_bds=tuple(opt_0_bds)
+    opt_0i_bds=tuple(opt_0i_bds)
+    opt_0_its=tuple(opt_0_its)
+#
+    opt_1_bds=[[-1.,1.] for i in range(7*n)]; 
+    opt_1_its=[False for i in range(7*n)]
+    opt_1_bds=tuple(opt_1_bds)
+    opt_1_its=tuple(opt_1_its)
 #
 #   clean the simus; make parallel (appended data) version for full collision
 #   make heuristic packing (SA paper)
@@ -321,31 +157,104 @@ if __name__ == "__main__":
 #   think about problem... in SLM height is a thing... in FDM as well, considering failure 
 #   (chance to shift / to misalign)... 
 #   I have seen it
+#   time also seems depenendent on it
 #
-    if 1 == 1:
-        res=dual_annealing(simu_bp,args=(n,pnts,maps,c_l,c_r,c_v,0),bounds=opt_0_bds,\
-            callback=partial(back_bp3,args=(n,pnts,maps,c_l,c_r,c_v,nums,stps,stcs)),
-            seed=1,no_local_search=False,maxiter=1000)
+    if meth == 'objall':
+#
+#       dual annealing full collisions (based on objects) continuous rotations
+#
+        res=dual_annealing(simu_obp_co,args=(n,cols,tfms,vtps,maps,c_l,c_r,c_a,c_v_0,0,0),\
+            bounds=opt_1_bds,seed=1,no_local_search=False,\
+            callback=partial(back_da_co,args=(n,cols,tfms,vtps,maps,c_l,c_r,c_a,c_v_0,\
+            nums,vtps,vtcs,0,0)),maxiter=1000)
+#
+    elif meth == 'objsix':
+#
+#       dual annealing full collisions (based on objects) 6 rotations
+#
+        res=dual_annealing(simu_obp_co,args=(n,cols,tfms,vtps,maps,c_l,c_r,c_a,c_v_0,1,0),\
+            bounds=opt_0_bds,seed=1,no_local_search=False,\
+            callback=partial(back_da_co,args=(n,cols,tfms,vtps,maps,c_l,c_r,c_a,c_v_0,\
+            nums,vtps,vtcs,1,0)))
+#
+    elif meth == 'boxsix':
+#
+#       dual annealing axis aligned bounding box based collisions with 6 rotations
+#
+        res=dual_annealing(simu_obp,args=(n,pnts,maps,c_l,c_a,c_r,c_v_0,1,0),bounds=opt_0_bds,\
+            callback=partial(back_da,args=(n,pnts,maps,c_l,c_a,c_r,c_v_0,nums,vtps,vtcs,1,0)),\
+            seed=1,no_local_search=False)
+#
+    elif meth == 'boxall':
+#
+#       dual annealing axis aligned bounding box based collisions with all rotations
+#
+        res=dual_annealing(simu_obp,args=(n,pnts,maps,c_l,c_a,c_r,c_v_0,0,0),bounds=opt_1_bds,\
+            callback=partial(back_da,args=(n,pnts,maps,c_l,c_a,c_r,c_v_0,nums,vtps,vtcs,0,0)),\
+            seed=1,no_local_search=False)
+#
+    elif 1 == 2:
+#
+#       do with start. implement SA guy start
+#
+        res=dual_annealing(simu_obp,args=(n,pnts,maps,c_l,c_r,c_v_0,0),bounds=opt_0i_bds,\
+            callback=partial(back_da,args=(n,pnts,maps,c_l,c_r,c_v_0,nums,vtps,vtcs,1,0)),\
+            seed=1,no_local_search=False)
     elif 2 == 1:
-        res=differential_evolution(simu_bp,args=(n,pnts,maps,c_l,c_r,c_v,0),bounds=opt_0_bds,\
-            callback=partial(back_bp2,args=(n,pnts,maps,c_l,c_r,c_v,nums,stps,stcs)),\
-            seed=1,maxiter=1000,workers=4,popsize=1,updating='deferred',polish=False,disp=False,\
-            integrality=opt_0_its)
-    elif 3 == 1:
-        res=shgo(simu_bp,args=(n,pnts,maps,c_l,c_r,c_v,0),bounds=opt_0_bds,\
-            callback=partial(back_bp4,args=(n,pnts,maps,c_l,c_r,c_v,nums,stps,stcs)),\
-            workers=4,n=100,iters=100,options={'disp': True})
+        res=differential_evolution(simu_obp,args=(n,pnts,maps,c_l,c_r,c_v_0,0),bounds=opt_0_bds,\
+            callback=partial(back_de,args=(n,pnts,maps,c_l,c_r,c_v_0,nums,vtps,vtcs,1,0)),\
+            seed=1,workers=cpus,updating='deferred',polish=False,disp=False,integrality=opt_0_its)
+    elif 1 == 2:
+        res=differential_evolution(simu_obp,args=(n,pnts,maps,c_l,c_r,c_v_0,0),bounds=opt_0_bds,\
+            callback=partial(back_de,args=(n,pnts,maps,c_l,c_r,c_v_0,nums,vtps,vtcs,1,0)),\
+            seed=1,workers=cpus,updating='deferred',polish=False,disp=False)
+    elif 1 == 2:
+        res=shgo(simu_obp,args=(n,pnts,maps,c_l,c_r,c_v_0,0),bounds=opt_0_bds,\
+            callback=partial(back_x,args=(n,pnts,maps,c_l,c_r,c_v_0,nums,vtps,vtcs,1,0)),\
+            workers=cpus,options={'disp': True})
+    elif 1 == 2:
+        res=direct(simu_obp,args=(n,pnts,maps,c_l,c_r,c_v_0,0),bounds=opt_0_bds,\
+            callback=partial(back_x,args=(n,pnts,maps,c_l,c_r,c_v_0,nums,vtps,vtcs,1,0)))
+    elif 1 == 1:
+        res=brute(simu_obp,args=(n,pnts,maps,c_l,c_r,c_v_0,0),ranges=opt_0_bds,workers=cpus)
+#           callback=partial(back_x,args=(n,pnts,maps,c_l,c_r,c_v_0,nums,vtps,vtcs,1,0)))
     else:
-        res=direct(simu_bp,args=(n,pnts,maps,c_l,c_r,c_v,0),bounds=opt_0_bds,locally_biased=False,\
-            callback=partial(back_bp4,args=(n,pnts,maps,c_l,c_r,c_v,nums,stps,stcs)),eps=1.)
+#
+#       variables can not be bounded.... use modulo function... it has a derivative
+#
+        res=dual_annealing(simu_obp,args=(n,pnts,maps,c_l,c_r,c_v_0,0),bounds=opt_0_bds,\
+            callback=partial(back_da,args=(n,pnts,maps,c_l,c_r,c_v_0,nums,vtps,vtcs,1,0)),
+            seed=1,maxiter=1,no_local_search=False)
+        print('here')
+        xi=res.x
+        res=basinhopping(simu_obp,minimizer_kwargs={"method":"Nelder-Mead","args":(n,pnts,maps,c_l,c_r,c_v_0,0)},\
+            callback=partial(back_bh,args=(n,pnts,maps,c_l,c_r,c_v_0,nums,vtps,vtcs,1,0)),\
+            seed=1,x0=xi)
 #
     print(res)
+#
+    x=res.x
+#
+    vtps_0=[]
+    for i in range(n):
+        tfm=vtk.vtkTransform()
+        tfm.Translate(-objs[maps[i]].cen_0[0],-objs[maps[i]].cen_0[1],-objs[maps[i]].cen_0[2])
+        tfm.Update()
+        vtps_0.append(tran(objs[maps[i]].vtp_0,tfm))
+#
+    if 'six' in meth:
+        app=appdata(x,n,nums,maps,vtps_0,c_l,c_a,c_r,1,0)
+        woutfle(app.GetOutput(),'build',1)
+    else:
+        app=appdata(x,n,nums,maps,vtps_0,c_l,c_a,c_r,0,0)
+        woutfle(app.GetOutput(),'build',1)
+#
     stop
 #
     xi=np.zeros(7*n)
     x=res.x
     for i in range(n):
-        xi[7*i+0]=x[4*i+0]
+        xi[7*i]=x[4*i]
         xi[7*i+1]=x[4*i+1]
         xi[7*i+2]=x[4*i+2]
 #
@@ -373,7 +282,7 @@ if __name__ == "__main__":
 #
     print(res)
 #
-    res=dual_annealing(simu_nm_co,args=(n,cols,tfms,vtps,maps,c_l,c_a,c_v,0),bounds=opt_1_bds,\
+    res=dual_annealing(simu_nm_co,args=(n,cols,tfms,vtps,maps,c_l,c_a,c_v_1,0),bounds=opt_1_bds,\
         callback=partial(back_nm_co,args=(n,cols,tfms,vtps,maps,c_l,c_a,c_v,nums,stps,stcs)),
         seed=1,no_local_search=True,maxiter=100,x0=xi,initial_temp=1.)#,workers=4,seed=1
 #

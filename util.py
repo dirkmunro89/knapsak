@@ -3,57 +3,70 @@ import vtk
 import numpy as np
 from scipy.spatial.transform import Rotation as R
 #
-def appd3(x,n,nums,maps,stis,c_l,c_r):
+def appdata(x,n,nums,maps,vtis,c_l,c_a,c_r,int_flg,str_flg):
 #
     c=0
-    app = vtk.vtkAppendDataSets()
+    app=vtk.vtkAppendDataSets()
     app.SetOutputDataSetType(0)
     for n in range(len(nums)):
 #
-        red = vtk.vtkXMLPolyDataReader()
-        red.ReadFromInputStringOn()
-        red.SetInputString(stis[n])
-        red.Update()
-        vtp = red.GetOutput()
+        if str_flg:
+           red=vtk.vtkXMLPolyDataReader()
+           red.ReadFromInputStringOn()
+           red.SetInputString(stis[n])
+           red.Update()
+           vtp=red.GetOutput()
+        else:
+            vtp = vtis[n]
 #
         for j in range(nums[n]):
 #
             tfm=vtk.vtkTransform()
-            tfm.Translate(c_l[0]*x[c*4+0], c_l[1]*x[c*4+1], c_l[2]*x[c*4+2])
+            tfm.PostMultiply()
 #
-            if x[c*4+3] >= 0-3.5 and x[c*4+3] < 1-3.5:
-                r=R.from_matrix(c_r[0].T).as_rotvec()
+            if int_flg:
+#
+#               derivative of modulo operator is 1 (in fixed point arithmetic) :)
+                tmp=abs(x[c*4])%7 - 3.5
+#
+                if tmp >= 0-3.5 and tmp < 1-3.5:
+                    r=R.from_matrix(c_r[0].T).as_rotvec()
 #               tfm.RotateWXYZ(0, 1, 0, 0)
-            elif x[c*4+3] >= 1-3.5 and x[c*4+3] < 2-3.5:
-                r=R.from_matrix(c_r[1].T).as_rotvec()
+                elif tmp >= 1-3.5 and tmp < 2-3.5:
+                    r=R.from_matrix(c_r[1].T).as_rotvec()
 #               tfm.RotateWXYZ(120, 1/np.sqrt(3), -1/np.sqrt(3), 1/np.sqrt(3))
-            elif x[c*4+3] >= 2-3.5 and x[c*4+3] < 3-3.5:
-                r=R.from_matrix(c_r[2].T).as_rotvec()
+                elif tmp >= 2-3.5 and tmp < 3-3.5:
+                    r=R.from_matrix(c_r[2].T).as_rotvec()
 #               tfm.RotateWXYZ(90, 1, 0, 0)
-            elif x[c*4+3] >= 3-3.5 and x[c*4+3] < 4-3.5:
-                r=R.from_matrix(c_r[3].T).as_rotvec()
+                elif tmp >= 3-3.5 and tmp < 4-3.5:
+                    r=R.from_matrix(c_r[3].T).as_rotvec()
 #               tfm.RotateWXYZ(90, 0, 1, 0)
-            elif x[c*4+3] >= 4-3.5 and x[c*4+3] < 5-3.5:
-                r=R.from_matrix(c_r[4].T).as_rotvec()
+                elif tmp >= 4-3.5 and tmp < 5-3.5:
+                    r=R.from_matrix(c_r[4].T).as_rotvec()
 #               tfm.RotateWXYZ(90, 0, 0, 1)
-            elif x[c*4+3] >= 5-3.5 and x[c*4+3] < 6-3.5:
-                r=R.from_matrix(c_r[5].T).as_rotvec()
+                elif tmp >= 5-3.5 and tmp < 6-3.5:
+                    r=R.from_matrix(c_r[5].T).as_rotvec()
 #               tfm.RotateWXYZ(120, -1/np.sqrt(3), 1/np.sqrt(3), -1/np.sqrt(3))
-            elif x[c*4+3] >= 6-3.5 and x[c*4+3] < 7-3.5:
-                r=R.from_matrix(c_r[6].T).as_rotvec()
+                elif tmp >= 6-3.5 and tmp < 7-3.5:
+                    r=R.from_matrix(c_r[6].T).as_rotvec()
 #               tfm.RotateWXYZ(0, 1, 0, 0)
+                else:
+                    print(x[i*4],tmp)
+                    print('error util')
+                    exit()
+                tmp=max(np.linalg.norm(r),1e-9)
+                tfm.RotateWXYZ(np.rad2deg(tmp),r[0]/tmp,r[1]/tmp,r[2]/tmp)
+                tfm.Translate(c_l[0]*x[c*4+1], c_l[1]*x[c*4+2], c_l[2]*x[c*4+3])
             else:
-                print(x[i*4+3])
-                print('error')
-                exit()
-#
-            tmp=np.linalg.norm(r)
-            tfm.RotateWXYZ(np.rad2deg(tmp), r[0]/max(tmp,1e-9),r[1]/max(tmp,1e-9),r[2]/max(tmp,1e-9))
+                tfm.RotateWXYZ(c_a*x[c*7], x[c*7+1], x[c*7+2], x[c*7+3])
+                tfm.Translate(c_l[0]*x[c*7+4], c_l[1]*x[c*7+5], c_l[2]*x[c*7+6])
 #
             tfm.Update()
             tmp=tran(vtp,tfm)
             app.AddInputData(tmp)
+#
             c=c+1
+#
     app.Update()
 #
     return app
