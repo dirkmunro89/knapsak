@@ -237,8 +237,12 @@ if __name__ == "__main__":
 #
     vtps_0=[]
     for i in range(n):
+#
         tfm=vtk.vtkTransform()
-        tfm.Translate(-objs[maps[i]].cen_0[0],-objs[maps[i]].cen_0[1],-objs[maps[i]].cen_0[2])
+#
+#       translate input STL to the same center of rotation as the cleaned and decimated STL
+#
+        tfm.Translate(-objs[maps[i]].cen[0],-objs[maps[i]].cen[1],-objs[maps[i]].cen[2])
         tfm.Update()
         vtps_0.append(tran(objs[maps[i]].vtp_0,tfm))
 #
@@ -248,6 +252,8 @@ if __name__ == "__main__":
     else:
         app=appdata(x,n,nums,maps,vtps_0,c_l,c_a,c_r,0,0)
         woutfle(app.GetOutput(),'build',1)
+        app=appdata(x,n,nums,maps,vtps,c_l,c_a,c_r,0,0)
+        woutfle(app.GetOutput(),'objec',1)
 #
     stop
 #
