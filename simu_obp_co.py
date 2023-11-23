@@ -97,7 +97,7 @@ def simu_obp_co(xk,n,cols,tfms,vtps,maps,c_l,c_r,c_a,c_v,int_flg,flg):
         if int_flg:
 #   
 #           derivative of modulo operator is 1 (in fixed point arithmetic) :)
-            tmp=abs(xk[i*4])%7 - 3.5
+            tmp=xk[i*4]#abs(xk[i*4])%7 - 3.5
 #
             if tmp >= 0-3.5 and tmp < 1-3.5:
                 r=R.from_matrix(c_r[0].T).as_rotvec()

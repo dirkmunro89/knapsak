@@ -73,7 +73,7 @@ def appdata(x,n,nums,maps,vtis,c_l,c_a,c_r,int_flg,str_flg,col_flg):
             if int_flg:
 #
 #               derivative of modulo operator is 1 (in fixed point arithmetic) :)
-                tmp=abs(x[c*4])%7 - 3.5
+                tmp=x[c*4]#abs(x[c*4])%7 - 3.5
 #
                 if tmp >= 0-3.5 and tmp < 1-3.5:
                     r=R.from_matrix(c_r[0].T).as_rotvec()
