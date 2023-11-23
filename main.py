@@ -2,39 +2,23 @@
 import os
 import sys
 import vtk
-import math
-import pickle
 import numpy as np
-import multiprocessing
-#
+import logging as log
 from functools import partial
-from scipy.optimize import differential_evolution
-from scipy.optimize import minimize
-from scipy.optimize import shgo
-from scipy.optimize import brute
-from scipy.optimize import direct
-from scipy.optimize import dual_annealing
-from scipy.optimize import basinhopping
-from scipy.optimize import Bounds
 from vtk.util import numpy_support
+from scipy.optimize import dual_annealing
 #
-from simu_ga import simu_ga, back_ga, back_sa
-from simu_ga_na import simu_ga_na, back_ga_na
-from simu_nm import simu_nm, back_nm
-from simu_co import simu_co, back_co
+level=log.INFO
+format   = '%(message)s'
+handlers = [log.FileHandler('history.log'), log.StreamHandler()]
+log.basicConfig(level = level, format = format, handlers = handlers)
+#
 #
 from init import init, pretfms
-#
-from simu_obp import simu_obp, back_bp, back_de, back_da, back_x, back_bh
+from simu_obp import simu_obp, back_da
 from simu_obp_co import simu_obp_co, back_da_co
 #
-from util import tran
-from util import move
-from util import appdata
-from util import woutfle
-from util import woutstr
-#
-# Note: 'object' and 'instance' is
+from util import tran, appdata, woutfle
 #
 if __name__ == "__main__":
 #
@@ -42,7 +26,6 @@ if __name__ == "__main__":
 #   - number to be stacked and
 #   - path to file
 #
-    cpus=4
     meth=sys.argv[1]
 #
     c=0
@@ -62,15 +45,28 @@ if __name__ == "__main__":
     c_v_0=0.
     c_v_1=0.
 #
+    flg=0
+    for file in os.listdir('./'):
+        filename = os.fsdecode(file)
+        if filename.endswith(".vtp"):
+            flg=1
+            break
+#
+    if flg == 1:
+        log.info('Please (re)move all vtp files from current directory (with e.g. make clean).')
+        log.info('Exiting.')
+        sys.exit(1)
+    
+#
     for i in range(nobj):
 #
-        print('='*60)
-        print('Pack %2d of %10s: '%(nums[i],flns[i]))
-        print('-'*60)
+        log.info('='*60)
+        log.info('Pack %2d of %10s: '%(nums[i],flns[i]))
+        log.info('-'*60)
 #
 #       make the object from the input file
 #
-        obj=init(i,flns[i])
+        obj=init(i,flns[i],log)
 #
 #       append to a list of the unique objects in the build
 #
@@ -93,16 +89,16 @@ if __name__ == "__main__":
             c_v_1=c_v_1+obj.vol
             n=n+1
 #
-    print('='*60)
-    print('Total volume of AABB volumes : %7.3e'%(c_v_0))
-    print('Total volume                 : %7.3e'%(c_v_1))
-    print('Efficiency                   : %7.3e'%(c_v_1/c_v_0))
-    print('='*60)
+    log.info('='*60)
+    log.info('Total volume of AABB volumes : %7.3e'%(c_v_0))
+    log.info('Total volume                 : %7.3e'%(c_v_1))
+    log.info('Efficiency                   : %7.3e'%(c_v_1/c_v_0))
+    log.info('='*60)
 #
     cols=[]
     m = int(n*(n-1)/2) # number of pairs (combination formula)
 #
-    print('Making %d collision objects'%m)
+    log.info('Making %d collision objects'%m)
     for i in range(n-1):
         for j in range(i+1,n):
 #
@@ -117,7 +113,7 @@ if __name__ == "__main__":
             col.Update()
             cols.append(col)
 #
-    print('='*60)
+    log.info('='*60)
 #
     pnts = [obj.pts for obj in objs]
     stps = [obj.stp for obj in objs]
@@ -151,26 +147,26 @@ if __name__ == "__main__":
     opt_1_bds=tuple(opt_1_bds)
     opt_1_its=tuple(opt_1_its)
 #
-    print('%14s%16s'%('F_0','collisions'))
-    print('-'*60)
+    log.info('%14s%16s'%('F_0','collisions'))
+    log.info('-'*60)
 #
     if meth == 'objall':
 #
 #       dual annealing full collisions (based on objects) continuous rotations
 #
         simu_args=(n,cols,tfms,vtps,maps,c_l,c_r,c_a,c_v_0,0,0)
-        back_args=(n,cols,tfms,vtps,maps,c_l,c_r,c_a,c_v_0,nums,vtps,vtcs,0,0)
-        res=dual_annealing(simu_obp_co,args=simu_args,bounds=opt_1_bds,seed=1,maxiter=1,\
+        back_args=(n,cols,tfms,vtps,maps,c_l,c_r,c_a,c_v_0,nums,vtps,vtcs,0,0,log)
+        res=dual_annealing(simu_obp_co,args=simu_args,bounds=opt_1_bds,seed=1,maxfun=100000,\
             callback=partial(back_da_co,args=back_args))
 #
     elif meth == 'objsix':
 #
 #       dual annealing full collisions (based on objects) 6 rotations
 #
-        res=dual_annealing(simu_obp_co,args=(n,cols,tfms,vtps,maps,c_l,c_r,c_a,c_v_0,1,0),\
-            bounds=opt_0_bds,seed=1,no_local_search=False,\
-            callback=partial(back_da_co,args=(n,cols,tfms,vtps,maps,c_l,c_r,c_a,c_v_0,\
-            nums,vtps,vtcs,1,0)),maxiter=1)
+        simu_args=(n,cols,tfms,vtps,maps,c_l,c_r,c_a,c_v_0,1,0)
+        back_args=(n,cols,tfms,vtps,maps,c_l,c_r,c_a,c_v_0,nums,vtps,vtcs,1,0,log)
+        res=dual_annealing(simu_obp_co,args=simu_args,bounds=opt_0_bds,seed=1,maxfun=100000,\
+            callback=partial(back_da_co,args=back_args))
 #
     elif meth == 'boxsix':
 #
@@ -189,13 +185,13 @@ if __name__ == "__main__":
             seed=1,no_local_search=False)
 #
     else:
-        print('error')
+        log.info('error')
 #
-    print('='*60)
-    print('Scipy Output')
-    print('-'*60)
+    log.info('='*60)
+    log.info('Scipy Output')
+    log.info('-'*60)
 #
-    print(res)
+    log.info(res)
 #
     vtps_0 = [obj.vtp_0 for obj in objs]
     for i in range(nobj):
@@ -220,6 +216,6 @@ if __name__ == "__main__":
 #       app=appdata(res.x,n,nums,maps,vtps,c_l,c_a,c_r,0,0)
 #       woutfle(app.GetOutput(),'objec',1)
 #
-    print('-'*60)
-    print('Result written to build.vtp')
-    print('='*60)
+    log.info('-'*60)
+    log.info('Result written to build.vtp')
+    log.info('='*60)

@@ -7,42 +7,12 @@ from scipy.spatial.transform import Rotation as R
 import numpy as np
 from util import tran, appdata, woutfle
 #
-#   the default is premultiply; hence it looks strange that translation is before rotation
-#
-def back_x(xk,args):
-#
-    [n,pnts,maps,c_l,c_r,c_v,nums,vtps,vtcs,int_flg,str_flg]=args
-#
-    [f,c]=simu_obp(xk,n,pnts,maps,c_l,c_r,c_v,1)
-    print('%14.3e %6d'%(f,c),flush=True)
-#
-    app=appdata(xk,n,nums,maps,vtcs,c_l,c_r,int_flg,str_flg)
-    woutfle(app.GetOutput(),'cubes',0)
-    app=appdata(xk,n,nums,maps,vtps,c_l,c_r,int_flg,str_flg)
-    woutfle(app.GetOutput(),'parts',0)
-#
-    return False
-#
-def back_bh(xk,fk,accept,args):
-#
-    [n,pnts,maps,c_l,c_r,c_v,nums,vtps,vtcs,int_flg,str_flg]=args
-#
-    [f,c]=simu_obp(xk,n,pnts,maps,c_l,c_r,c_v,1)
-    print('%14.3e %6d %6d'%(f,c,accept),flush=True)
-#
-    app=appdata(xk,n,nums,maps,vtcs,c_l,c_r,int_flg,str_flg)
-    woutfle(app.GetOutput(),'cubes',0)
-    app=appdata(xk,n,nums,maps,vtps,c_l,c_r,int_flg,str_flg)
-    woutfle(app.GetOutput(),'parts',0)
-#
-    return False
-#
 def back_da(xk,fk,context,args):
 #
-    [n,pnts,maps,c_l,c_a,c_r,c_v,nums,vtps,vtcs,int_flg,str_flg]=args
+    [n,pnts,maps,c_l,c_a,c_r,c_v,nums,vtps,vtcs,int_flg,str_flg,log]=args
 #
     [f,c]=simu_obp(xk,n,pnts,maps,c_l,c_a,c_r,c_v,int_flg,1)
-    print('%14.3e %6d'%(fk,c),flush=True)
+    log.info('%14.3e %6d'%(fk,c))
 #
     k=0
     for file in os.listdir('./'):
@@ -57,43 +27,6 @@ def back_da(xk,fk,context,args):
 #
     if context==2:
         return True
-    return False
-#
-def back_de(xk,convergence,args):
-#
-    [n,pnts,maps,c_l,c_r,c_v,nums,stps,stcs,int_flg,str_flg]=args
-#
-    [f,c]=simu_obp(xk,n,pnts,maps,c_l,c_r,c_v,1)
-    print('%14.3e %6d %14.3e'%(f,c,convergence),flush=True)
-#
-    app=appdata(xk,n,nums,maps,stcs,c_l,c_r,int_flg,str_flg)
-    woutfle(app.GetOutput(),'cubes',0)
-    app=appdata(xk,n,nums,maps,stps,c_l,c_r,int_flg,str_flg)
-    woutfle(app.GetOutput(),'parts',0)
-#
-    return False
-#
-def back_bp(xk,convergence,args):
-#
-    n=args[0]
-    nobj=args[1]
-    cubs_str=args[2]
-    objs_num=args[3]
-    c_l=args[4]
-    c_a=args[5]
-    c_v=args[6]
-    cols=args[7]
-    tfms=args[8]
-    maps=args[9]
-    objs_str=args[10]
-    objs=args[11]
-    pnts=args[12]
-    [f,c,outs]=simu_bp(xk,n,pnts,maps,c_r,c_v,1)
-    print('%7.3f %14.3e %6d'%(convergence,f,c),flush=True)
-#
-    app=appd3(xk,nobj,cubs_str,objs_num,c_l,c_a)
-    woutfle(app.GetOutput(),'see',-1)
-#
     return False
 #
 def simu_obp(xk,n,pnts,maps,c_l,c_a,c_r,c_v,int_flg,flg):

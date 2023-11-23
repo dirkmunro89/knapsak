@@ -12,10 +12,10 @@ from util import tran, appdata, woutfle
 #
 def back_da_co(xk,fk,context,args):
 #
-    [n,cols,tfms,vtps,maps,c_l,c_r,c_a,c_v,nums,vtps,vtcs,int_flg,str_flg]=args
+    [n,cols,tfms,vtps,maps,c_l,c_r,c_a,c_v,nums,vtps,vtcs,int_flg,str_flg,log]=args
 #
     [f,c]=simu_obp_co(xk,n,cols,tfms,vtps,maps,c_l,c_r,c_a,c_v,int_flg,1)
-    print('%14.3e %6d'%(fk,c),flush=True)
+    log.info('%14.3e %6d'%(fk,c))
 #
     k=0
     for file in os.listdir('./'):

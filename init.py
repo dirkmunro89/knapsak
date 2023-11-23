@@ -16,7 +16,7 @@ class Object():
     def SetAttr(self,lab,val):
         self.__dict__[lab] = val
 #
-def init(i,fln):
+def init(i,fln,log):
 #
     if 1 == 1:
 #
@@ -48,13 +48,13 @@ def init(i,fln):
         obj.vol_0=prp.GetVolume()
         obj.srf_0=prp.GetSurfaceArea()
 #
-        print('-points   : %14d'%obj.vtp_0.GetNumberOfPoints())
-        print('-cells    : %14d'%obj.vtp_0.GetNumberOfCells())
-        print('-centroid : %14.3e'%(obj.cen_0[0]))
-        print('          : %14.3e'%(obj.cen_0[1]))
-        print('          : %14.3e'%(obj.cen_0[2]))
-        print("-area     : %14.3e"%obj.srf_0)
-        print("-volume   : %14.3e"%obj.vol_0)
+        log.info('-points   : %14d'%obj.vtp_0.GetNumberOfPoints())
+        log.info('-cells    : %14d'%obj.vtp_0.GetNumberOfCells())
+        log.info('-centroid : %14.3e'%(obj.cen_0[0]))
+        log.info('          : %14.3e'%(obj.cen_0[1]))
+        log.info('          : %14.3e'%(obj.cen_0[2]))
+        log.info("-area     : %14.3e"%obj.srf_0)
+        log.info("-volume   : %14.3e"%obj.vol_0)
 #
 #       clean it
 #
@@ -75,9 +75,9 @@ def init(i,fln):
 #
         obj.vtp=flt.GetOutput()
 #
-        print('-'*60)
-        print('Cleaned and decimated: ')
-        print('-'*60)
+        log.info('-'*60)
+        log.info('Cleaned and decimated: ')
+        log.info('-'*60)
 #
         if obj.vtp.GetNumberOfCells() > 200:
             flt=vtk.vtkQuadricDecimation()
@@ -103,13 +103,13 @@ def init(i,fln):
         obj.vol=prp.GetVolume()
         obj.srf=prp.GetSurfaceArea()
 #
-        print('-points   : %14d'%obj.vtp.GetNumberOfPoints())
-        print('-cells    : %14d'%obj.vtp.GetNumberOfCells())
-        print('-centroid : %14.3e'%(obj.cen[0]))
-        print('          : %14.3e'%(obj.cen[1]))
-        print('          : %14.3e'%(obj.cen[2]))
-        print("-area     : %14.3e"%obj.srf)
-        print("-volume   : %14.3e"%obj.vol)
+        log.info('-points   : %14d'%obj.vtp.GetNumberOfPoints())
+        log.info('-cells    : %14d'%obj.vtp.GetNumberOfCells())
+        log.info('-centroid : %14.3e'%(obj.cen[0]))
+        log.info('          : %14.3e'%(obj.cen[1]))
+        log.info('          : %14.3e'%(obj.cen[2]))
+        log.info("-area     : %14.3e"%obj.srf)
+        log.info("-volume   : %14.3e"%obj.vol)
 #
 #       transform updated object so that its centroid is 0,0,0
 #
@@ -129,10 +129,10 @@ def init(i,fln):
         obj.bds=obj.vtp.GetBounds()
         obj.bbv=(obj.bds[1]-obj.bds[0])*(obj.bds[3]-obj.bds[2])*(obj.bds[5]-obj.bds[4])
 #
-        print("-AAB box  : %14.3e"%(obj.bds[1]-obj.bds[0]))
-        print("          : %14.3e"%(obj.bds[3]-obj.bds[2]))
-        print("          : %14.3e"%(obj.bds[5]-obj.bds[4]))
-        print("-with vol.: %14.3e"%obj.bbv)
+        log.info("-AAB box  : %14.3e"%(obj.bds[1]-obj.bds[0]))
+        log.info("          : %14.3e"%(obj.bds[3]-obj.bds[2]))
+        log.info("          : %14.3e"%(obj.bds[5]-obj.bds[4]))
+        log.info("-with vol.: %14.3e"%obj.bbv)
 #
 #       make cube source
 #
