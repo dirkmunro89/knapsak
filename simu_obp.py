@@ -1,11 +1,11 @@
 #
-#   orthogonal box packing
-#
+import os
 import vtk
+import numpy as np
 from vtk.util import numpy_support
 from scipy.spatial.transform import Rotation as R
-import numpy as np
-from util import tran, appdata, woutfle
+#
+from util import appdata, woutfle
 #
 def back_da(xk,fk,context,args):
 #
@@ -14,15 +14,15 @@ def back_da(xk,fk,context,args):
     [f,c]=simu_obp(xk,n,pnts,maps,c_l,c_a,c_r,c_v,int_flg,1)
     log.info('%14.3e %6d'%(fk,c))
 #
-    k=0
+    k=1
     for file in os.listdir('./'):
         filename = os.fsdecode(file)
         if 'cubis_' in filename and filename.endswith(".vtp"):
             k=k+1
 #
-    app=appdata(xk,n,nums,maps,vtcs,c_l,c_a,c_r,int_flg,str_flg)
+    app=appdata(xk,n,nums,maps,vtcs,c_l,c_a,c_r,int_flg,str_flg,1)
     woutfle(app.GetOutput(),'cubis',k)
-    app=appdata(xk,n,nums,maps,vtps,c_l,c_a,c_r,int_flg,str_flg)
+    app=appdata(xk,n,nums,maps,vtps,c_l,c_a,c_r,int_flg,str_flg,1)
     woutfle(app.GetOutput(),'objec',k)
 #
     if context==2:
@@ -41,10 +41,10 @@ def simu_obp(xk,n,pnts,maps,c_l,c_a,c_r,c_v,int_flg,flg):
 #
         pts_i=pnts[maps[i]]
 #
-#       derivative of modulo operator is 1 (in fixed point arithmetic) :)
-#
         if int_flg:
-            tmp=abs(xk[i*4])%7 - 3.5
+#
+#       derivative of modulo operator is 1 ...
+            tmp=xk[i*4]#abs(xk[i*4])%7 - 3.5
 #
             if tmp >= 0-3.5 and tmp < 1-3.5:
                 rot=c_r[0]
@@ -110,24 +110,6 @@ def simu_obp(xk,n,pnts,maps,c_l,c_a,c_r,c_v,int_flg,flg):
     f=(bds[1]-bds[0])*(bds[3]-bds[2])*(bds[5]-bds[4])/c_v
 #
     f=f+c
-#
-#   b=0.
-#   y=0.
-#   if bds[0]<-ext:
-#       b=b+(abs(bds[0])-ext)**1.
-#       y=y+1
-#   if bds[1]>ext:
-#       b=b+(abs(bds[1])-ext)**1.
-#       y=y+1
-#   if bds[2]<-ext:
-#       b=b+(abs(bds[2])-ext)**1.
-#       y=y+1
-#   if bds[3]>ext:
-#       b=b+(abs(bds[3])-ext)**1.
-#       y=y+1
-#   if bds[4]<-ext:
-#       b=b+(abs(bds[4]))**1.
-#       y=y+1
 #
     if flg == 0:
         return f

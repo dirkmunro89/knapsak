@@ -18,7 +18,7 @@ from init import init, pretfms
 from simu_obp import simu_obp, back_da
 from simu_obp_co import simu_obp_co, back_da_co
 #
-from util import tran, appdata, woutfle
+from util import tfmx, tran, appdata, woutfle
 #
 if __name__ == "__main__":
 #
@@ -156,7 +156,7 @@ if __name__ == "__main__":
 #
         simu_args=(n,cols,tfms,vtps,maps,c_l,c_r,c_a,c_v_0,0,0)
         back_args=(n,cols,tfms,vtps,maps,c_l,c_r,c_a,c_v_0,nums,vtps,vtcs,0,0,log)
-        res=dual_annealing(simu_obp_co,args=simu_args,bounds=opt_1_bds,seed=1,maxfun=100000,\
+        res=dual_annealing(simu_obp_co,args=simu_args,bounds=opt_1_bds,seed=1,maxfun=10000000,\
             callback=partial(back_da_co,args=back_args))
 #
     elif meth == 'objsix':
@@ -165,24 +165,39 @@ if __name__ == "__main__":
 #
         simu_args=(n,cols,tfms,vtps,maps,c_l,c_r,c_a,c_v_0,1,0)
         back_args=(n,cols,tfms,vtps,maps,c_l,c_r,c_a,c_v_0,nums,vtps,vtcs,1,0,log)
-        res=dual_annealing(simu_obp_co,args=simu_args,bounds=opt_0_bds,seed=1,maxfun=100000,\
+        res=dual_annealing(simu_obp_co,args=simu_args,bounds=opt_0_bds,seed=1,maxfun=1000000,\
             callback=partial(back_da_co,args=back_args))
 #
     elif meth == 'boxsix':
 #
 #       dual annealing axis aligned bounding box based collisions with 6 rotations
 #
-        res=dual_annealing(simu_obp,args=(n,pnts,maps,c_l,c_a,c_r,c_v_0,1,0),bounds=opt_0_bds,\
-            callback=partial(back_da,args=(n,pnts,maps,c_l,c_a,c_r,c_v_0,nums,vtps,vtcs,1,0)),\
-            seed=1,no_local_search=False)
+        simu_args=(n,pnts,maps,c_l,c_a,c_r,c_v_0,1,0)
+        back_args=(n,pnts,maps,c_l,c_a,c_r,c_v_0,nums,vtps,vtcs,1,0,log)
+        res=dual_annealing(simu_obp,args=simu_args,bounds=opt_0_bds,seed=1,maxfun=1000000,\
+            callback=partial(back_da,args=back_args))
+#
+#   elif meth == 'soxsix':
+#
+#       dual annealing axis aligned bounding box based collisions with 6 rotations
+#       and stretching of object. add.
+#
+#       simu_args=(n,pnts,maps,c_l,c_a,c_r,c_v_0,1,0)
+#       back_args=(n,pnts,maps,c_l,c_a,c_r,c_v_0,nums,vtps,vtcs,1,0,log)
+#       res=dual_annealing(simu_obp,args=simu_args,bounds=opt_1_bds,seed=1,maxfun=100,\
+#           callback=partial(back_da,args=back_args))
 #
     elif meth == 'boxall':
 #
 #       dual annealing axis aligned bounding box based collisions with all rotations
 #
-        res=dual_annealing(simu_obp,args=(n,pnts,maps,c_l,c_a,c_r,c_v_0,0,0),bounds=opt_1_bds,\
-            callback=partial(back_da,args=(n,pnts,maps,c_l,c_a,c_r,c_v_0,nums,vtps,vtcs,0,0)),\
-            seed=1,no_local_search=False)
+        simu_args=(n,pnts,maps,c_l,c_a,c_r,c_v_0,0,0)
+        back_args=(n,pnts,maps,c_l,c_a,c_r,c_v_0,nums,vtps,vtcs,0,0,log)
+        res=dual_annealing(simu_obp,args=simu_args,bounds=opt_1_bds,seed=1,maxfun=1000000,\
+            callback=partial(back_da,args=back_args))
+#       res=dual_annealing(simu_obp,args=(n,pnts,maps,c_l,c_a,c_r,c_v_0,0,0),bounds=opt_1_bds,\
+#           callback=partial(back_da,args=(n,pnts,maps,c_l,c_a,c_r,c_v_0,nums,vtps,vtcs,0,0)),\
+#           seed=1,no_local_search=False)
 #
     else:
         log.info('error')
@@ -205,17 +220,57 @@ if __name__ == "__main__":
         tfm.Update()
         vtps_0[i]=tran(vtps_0[i],tfm)
 #
+    for i in range(n):
+#
+        if 'six' in meth:
+            tfm=tfmx(res.x[4*i:4*i+4],c_l,c_a,c_r,1)
+            tmp=tran(vtps_0[maps[i]],tfm)
+            woutfle(tmp,'build',-i-1)
+        else:
+            tfm=tfmx(res.x[7*i:7*i+7],c_l,c_a,c_r,0)
+            tmp=tran(vtps_0[maps[i]],tfm)
+            woutfle(tmp,'build',-i-1)
+#
     if 'six' in meth:
-        app=appdata(res.x,n,nums,maps,vtps_0,c_l,c_a,c_r,1,0)
-        woutfle(app.GetOutput(),'build',-1)
-#       app=appdata(res.x,n,nums,maps,vtps,c_l,c_a,c_r,1,0)
-#       woutfle(app.GetOutput(),'objec',1)
+        app=appdata(res.x,n,nums,maps,vtps_0,c_l,c_a,c_r,1,0,1)
+        woutfle(app.GetOutput(),'build',0)
     else:
-        app=appdata(res.x,n,nums,maps,vtps_0,c_l,c_a,c_r,0,0)
-        woutfle(app.GetOutput(),'build',-1)
-#       app=appdata(res.x,n,nums,maps,vtps,c_l,c_a,c_r,0,0)
-#       woutfle(app.GetOutput(),'objec',1)
+        app=appdata(res.x,n,nums,maps,vtps_0,c_l,c_a,c_r,0,0,1)
+        woutfle(app.GetOutput(),'build',0)
 #
     log.info('-'*60)
     log.info('Result written to build.vtp')
+    log.info('='*60)
+#
+    mapper = vtk.vtkPolyDataMapper()
+    mapper.SetInputConnection(app.GetOutputPort())
+    mapper.SetColorModeToDirectScalars()
+#
+    actor = vtk.vtkActor()
+    actor.SetMapper(mapper)
+#
+    renderer = vtk.vtkRenderer()
+    renderWindow = vtk.vtkRenderWindow()
+    renderWindow.AddRenderer(renderer)
+    renderWindow.SetWindowName("Packing")
+    renderWindowInteractor = vtk.vtkRenderWindowInteractor()
+    renderWindowInteractor.SetRenderWindow(renderWindow)
+#
+    out=vtk.vtkOutlineFilter()
+    out.SetInputConnection(app.GetOutputPort())
+    mapper = vtk.vtkPolyDataMapper()
+    mapper.SetInputConnection(out.GetOutputPort())
+#
+    outline_actor = vtk.vtkActor()
+    outline_actor.SetMapper(mapper)
+    outline_actor.GetProperty().SetColor(0,0,0)
+#
+    renderer.AddActor(actor)
+    renderer.AddActor(outline_actor)
+    renderer.SetBackground(255, 255, 255) 
+#
+    renderWindow.Render()
+    renderWindowInteractor.Start()
+#
+    log.info('... and done.')
     log.info('='*60)

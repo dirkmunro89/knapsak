@@ -16,6 +16,8 @@ class Object():
     def SetAttr(self,lab,val):
         self.__dict__[lab] = val
 #
+#   init part data structures
+#
 def init(i,fln,log):
 #
     if 1 == 1:
