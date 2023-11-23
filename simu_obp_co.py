@@ -22,9 +22,9 @@ def back_da_co(xk,fk,context,args):
         if 'cubis_' in filename and filename.endswith(".vtp"):
             k=k+1
 #
-    app=appdata(xk,n,nums,maps,vtcs,c_l,c_a,c_r,int_flg,str_flg)
+    app=appdata(xk,n,nums,maps,vtcs,c_l,c_a,c_r,int_flg,str_flg,0)
     woutfle(app.GetOutput(),'cubis',k)
-    app=appdata(xk,n,nums,maps,vtps,c_l,c_a,c_r,int_flg,str_flg)
+    app=appdata(xk,n,nums,maps,vtps,c_l,c_a,c_r,int_flg,str_flg,0)
     woutfle(app.GetOutput(),'objec',k)
 #
     if context==2:
