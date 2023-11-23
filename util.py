@@ -161,7 +161,7 @@ def woutfle(vtp,fln,k):
     writer.SetDataModeToBinary()
     writer.SetCompressorTypeToNone()
     if k < 0:
-        writer.SetFileName(fln+'_all.vtp')
+        writer.SetFileName(fln+'.vtp')
     else:
         writer.SetFileName(fln+'_%d.vtp'%k)
     writer.Update()

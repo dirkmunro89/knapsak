@@ -75,9 +75,9 @@ def init(i,fln):
 #
         obj.vtp=flt.GetOutput()
 #
-        print('-'*40)
+        print('-'*60)
         print('Cleaned and decimated: ')
-        print('-'*40)
+        print('-'*60)
 #
         if obj.vtp.GetNumberOfCells() > 200:
             flt=vtk.vtkQuadricDecimation()

@@ -42,12 +42,18 @@ def back_da(xk,fk,context,args):
     [n,pnts,maps,c_l,c_a,c_r,c_v,nums,vtps,vtcs,int_flg,str_flg]=args
 #
     [f,c]=simu_obp(xk,n,pnts,maps,c_l,c_a,c_r,c_v,int_flg,1)
-    print('%14.3e %6d %6d'%(fk,c,context),flush=True)
+    print('%14.3e %6d'%(fk,c),flush=True)
+#
+    k=0
+    for file in os.listdir('./'):
+        filename = os.fsdecode(file)
+        if 'cubis_' in filename and filename.endswith(".vtp"):
+            k=k+1
 #
     app=appdata(xk,n,nums,maps,vtcs,c_l,c_a,c_r,int_flg,str_flg)
-    woutfle(app.GetOutput(),'cubes',0)
+    woutfle(app.GetOutput(),'cubis',k)
     app=appdata(xk,n,nums,maps,vtps,c_l,c_a,c_r,int_flg,str_flg)
-    woutfle(app.GetOutput(),'parts',0)
+    woutfle(app.GetOutput(),'objec',k)
 #
     if context==2:
         return True
