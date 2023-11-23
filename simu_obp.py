@@ -20,9 +20,9 @@ def back_da(xk,fk,context,args):
         if 'cubis_' in filename and filename.endswith(".vtp"):
             k=k+1
 #
-    app=appdata(xk,n,nums,maps,vtcs,c_l,c_a,c_r,int_flg,str_flg,0)
+    app=appdata(xk,n,nums,maps,vtcs,c_l,c_a,c_r,int_flg,str_flg,1)
     woutfle(app.GetOutput(),'cubis',k)
-    app=appdata(xk,n,nums,maps,vtps,c_l,c_a,c_r,int_flg,str_flg,0)
+    app=appdata(xk,n,nums,maps,vtps,c_l,c_a,c_r,int_flg,str_flg,1)
     woutfle(app.GetOutput(),'objec',k)
 #
     if context==2:
@@ -41,10 +41,10 @@ def simu_obp(xk,n,pnts,maps,c_l,c_a,c_r,c_v,int_flg,flg):
 #
         pts_i=pnts[maps[i]]
 #
-#       derivative of modulo operator is 1 (in fixed point arithmetic) :)
-#
         if int_flg:
-            tmp=abs(xk[i*4])%7 - 3.5
+#
+#       derivative of modulo operator is 1 ...
+            tmp=xk[i*4]#abs(xk[i*4])%7 - 3.5
 #
             if tmp >= 0-3.5 and tmp < 1-3.5:
                 rot=c_r[0]

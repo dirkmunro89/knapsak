@@ -137,7 +137,6 @@ if __name__ == "__main__":
     opt_0_its=[False for i in range(4*n)]
     for c in range(n):
         opt_0_bds[4*c]=[-3,3]
-        opt_0_bds[4*c]=[-1e-12,1e-12]
         opt_0_its[4*c]=True
     opt_0_bds=tuple(opt_0_bds)
     opt_0i_bds=tuple(opt_0i_bds)

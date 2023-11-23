@@ -22,9 +22,9 @@ def back_da_co(xk,fk,context,args):
         if 'cubis_' in filename and filename.endswith(".vtp"):
             k=k+1
 #
-    app=appdata(xk,n,nums,maps,vtcs,c_l,c_a,c_r,int_flg,str_flg,0)
+    app=appdata(xk,n,nums,maps,vtcs,c_l,c_a,c_r,int_flg,str_flg,1)
     woutfle(app.GetOutput(),'cubis',k)
-    app=appdata(xk,n,nums,maps,vtps,c_l,c_a,c_r,int_flg,str_flg,0)
+    app=appdata(xk,n,nums,maps,vtps,c_l,c_a,c_r,int_flg,str_flg,1)
     woutfle(app.GetOutput(),'objec',k)
 #
     if context==2:
@@ -41,8 +41,8 @@ def simu_obp_co(xk,n,cols,tfms,vtps,maps,c_l,c_r,c_a,c_v,int_flg,flg):
 #
         if int_flg:
 #   
-#           derivative of modulo operator is 1 (in fixed point arithmetic) :)
-            tmp=abs(xk[i*4])%7 - 3.5
+#           derivative of modulo operator is 1 :)
+            tmp=xk[i*4]#abs(xk[i*4])%7 - 3.5
 #
             if tmp >= 0-3.5 and tmp < 1-3.5:
                 r=R.from_matrix(c_r[0].T).as_rotvec()
