@@ -9,7 +9,7 @@ from util import appdata, woutfle
 #
 def back_da(xk,fk,context,args):
 #
-    [n,pnts,maps,c_l,c_a,c_r,c_v,nums,vtps,vtcs,int_flg,str_flg,log]=args
+    [n,pnts,maps,c_l,c_a,c_r,c_v,nums,vtps,vtcs,int_flg,str_flg,log,vis]=args
 #
     [f,c]=simu_obp(xk,n,pnts,maps,c_l,c_a,c_r,c_v,int_flg,1)
     log.info('%14.3e %6d'%(fk,c))
@@ -25,6 +25,23 @@ def back_da(xk,fk,context,args):
     app=appdata(xk,n,nums,maps,vtps,c_l,c_a,c_r,int_flg,str_flg,1)
     woutfle(app.GetOutput(),'objec',k)
 #
+    [mapper,outline_mapper,axes_actor,renderer,renderWindow]=vis
+#
+    mapper.SetInputConnection(app.GetOutputPort())
+#
+    out=vtk.vtkOutlineFilter()
+    out.SetInputConnection(app.GetOutputPort())
+    outline_mapper.SetInputConnection(out.GetOutputPort())
+#
+    transform = vtk.vtkTransform()
+    vtp=app.GetOutput()
+    bds=vtp.GetBounds()
+    transform.Translate(bds[0],bds[2],bds[4])
+    axes_actor.SetUserTransform(transform)
+#
+    renderer.ResetCameraScreenSpace(bds)
+    renderWindow.Render()
+#
     if context==2:
         return True
     return False
@@ -37,13 +54,14 @@ def simu_obp(xk,n,pnts,maps,c_l,c_a,c_r,c_v,int_flg,flg):
 #
 #   apply transforms and compute new total bounding box
 #
+    c_v_n=0
+#
     for i in range(n):
 #
         pts_i=pnts[maps[i]]
 #
-        if int_flg:
+        if int_flg == 1:
 #
-#       derivative of modulo operator is 1 ...
             tmp=xk[i*4]#abs(xk[i*4])%7 - 3.5
 #
             if tmp >= 0-3.5 and tmp < 1-3.5:
@@ -66,6 +84,31 @@ def simu_obp(xk,n,pnts,maps,c_l,c_a,c_r,c_v,int_flg,flg):
                 exit()
             npts_i = np.dot(pts_i,rot) + xk[4*i+1:4*i+4]*c_l
 #
+        elif int_flg == 2:
+#
+            tmp=xk[i*7]#abs(xk[i*4])%7 - 3.5
+#
+            if tmp >= 0-3.5 and tmp < 1-3.5:
+                rot=c_r[0]
+            elif tmp >= 1-3.5 and tmp < 2-3.5:
+                rot=c_r[1]
+            elif tmp >= 2-3.5 and tmp < 3-3.5:
+                rot=c_r[2]
+            elif tmp >= 3-3.5 and tmp < 4-3.5:
+                rot=c_r[3]
+            elif tmp >= 4-3.5 and tmp < 5-3.5:
+                rot=c_r[4]
+            elif tmp >= 5-3.5 and tmp < 6-3.5:
+                rot=c_r[5]
+            elif tmp >= 6-3.5 and tmp < 7-3.5:
+                rot=c_r[6]
+            else:
+                print(xk[i*4],tmp)
+                print('error simu')
+                exit()
+#
+            npts_i = np.dot(pts_i,rot)*np.array([1+xk[7*i+1:7*i+4]/4.])  + xk[7*i+4:7*i+7]*c_l
+#
         else:
 #
             tmp = np.array([xk[7*i+1],xk[7*i+2],xk[7*i+3]])
@@ -77,6 +120,8 @@ def simu_obp(xk,n,pnts,maps,c_l,c_a,c_r,c_v,int_flg,flg):
         npts.append(npts_i)
 #
         bnds.append(tuple(np.array([np.amin(npts_i,axis=0).T,np.amax(npts_i,axis=0).T]).T.flatten()))
+#
+        c_v_n=c_v_n+(bnds[i][1]-bnds[i][0])*(bnds[i][3]-bnds[i][2])*(bnds[i][5]-bnds[i][4])
 #
         if i == 0:
             bds=list(bnds[i][:])
@@ -107,7 +152,10 @@ def simu_obp(xk,n,pnts,maps,c_l,c_a,c_r,c_v,int_flg,flg):
                     if ( abs(com_i[2] - com_j[2]) <  ext_i[2] + ext_j[2] ):
                         c=c+1
 #
-    f=(bds[1]-bds[0])*(bds[3]-bds[2])*(bds[5]-bds[4])/c_v
+    if int_flg == 2:
+        f=(bds[1]-bds[0])*(bds[3]-bds[2])*(bds[5]-bds[4])/c_v_n
+    else:
+        f=(bds[1]-bds[0])*(bds[3]-bds[2])*(bds[5]-bds[4])/c_v
 #
     f=f+c
 #
