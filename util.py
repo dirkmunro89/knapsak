@@ -15,7 +15,7 @@ def tfmx(x,i,c_l,c_a,c_r,tfm,int_flg,rev_flg):
 #
     if int_flg == 1:
 #
-        tmp=x[c*4]#abs(x[c*4])%7 - 3.5
+        tmp=x[c*4]*3.#abs(x[c*4])%7 - 3.5
 #
         if tmp >= 0-3.5 and tmp < 1-3.5:
             r=R.from_matrix(c_r[0].T).as_rotvec()
@@ -46,7 +46,7 @@ def tfmx(x,i,c_l,c_a,c_r,tfm,int_flg,rev_flg):
 #
     elif int_flg == 2:
 #
-        tmp=x[c*7]#abs(x[c*4])%7 - 3.5
+        tmp=x[c*7]*3.#abs(x[c*4])%7 - 3.5
 #
         if tmp >= 0-3.5 and tmp < 1-3.5:
             r=R.from_matrix(c_r[0].T).as_rotvec()
@@ -70,14 +70,13 @@ def tfmx(x,i,c_l,c_a,c_r,tfm,int_flg,rev_flg):
         tmp=max(np.linalg.norm(r),1e-9)
         if rev_flg:
             tfm.Translate(-c_l[0]*x[c*7+4], -c_l[1]*x[c*7+5], -c_l[2]*x[c*7+6])
-            tfm.Scale(1/(1.0+x[c*7+1]/4),1/(1.0+x[c*7+2]/4),1/(1.0+x[c*7+3]/4))
+            tfm.Scale(1/(2.+x[c*7+1]),1/(2.+x[c*7+2]),1/(2.+x[c*7+3]))
             tfm.RotateWXYZ(-np.rad2deg(tmp),r[0]/tmp,r[1]/tmp,r[2]/tmp)
         else:
             tfm.RotateWXYZ(np.rad2deg(tmp),r[0]/tmp,r[1]/tmp,r[2]/tmp)
-            tfm.Scale(1+x[c*7+1]/4,1+x[c*7+2]/4,1+x[c*7+3]/4)
+            tfm.Scale(2.+x[c*7+1],2.+x[c*7+2],2.+x[c*7+3])
             tfm.Translate(c_l[0]*x[c*7+4], c_l[1]*x[c*7+5], c_l[2]*x[c*7+6])
-    
-#
+#    
     else:
 #
         if rev_flg:

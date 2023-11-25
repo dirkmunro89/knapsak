@@ -25,25 +25,25 @@ def back_da(xk,fk,context,args):
     app=appdata(xk,n,nums,maps,vtps,c_l,c_a,c_r,int_flg,str_flg,1)
     woutfle(app.GetOutput(),'objec',k)
 #
-    [mapper,outline_mapper,axes_actor,renderer,renderWindow]=vis
+    if vis:
 #
-    mapper.SetInputConnection(app.GetOutputPort())
+        [app_mpr,box_mpr,axs_act,ren,win]=vis
 #
-    out=vtk.vtkOutlineFilter()
-    out.SetInputConnection(app.GetOutputPort())
-    outline_mapper.SetInputConnection(out.GetOutputPort())
+        app_mpr.SetInputConnection(app.GetOutputPort())
 #
-    transform = vtk.vtkTransform()
-    vtp=app.GetOutput()
-    bds=vtp.GetBounds()
-    transform.Translate(bds[0],bds[2],bds[4])
-    axes_actor.SetUserTransform(transform)
+        box=vtk.vtkOutlineFilter()
+        box.SetInputConnection(app.GetOutputPort())
+        box_mpr.SetInputConnection(box.GetOutputPort())
 #
-    renderer.ResetCameraScreenSpace(bds)
-    renderWindow.Render()
+        tfm = vtk.vtkTransform()
+        vtp=app.GetOutput()
+        bds=vtp.GetBounds()
+        tfm.Translate(bds[0],bds[2],bds[4])
+        axs_act.SetUserTransform(tfm)
 #
-    if context==2:
-        return True
+        ren.ResetCameraScreenSpace(bds)
+        win.Render()
+#
     return False
 #
 def simu_obp(xk,n,pnts,maps,c_l,c_a,c_r,c_v,int_flg,flg):
@@ -62,7 +62,7 @@ def simu_obp(xk,n,pnts,maps,c_l,c_a,c_r,c_v,int_flg,flg):
 #
         if int_flg == 1:
 #
-            tmp=xk[i*4]#abs(xk[i*4])%7 - 3.5
+            tmp=xk[i*4]*3.#abs(xk[i*4])%7 - 3.5
 #
             if tmp >= 0-3.5 and tmp < 1-3.5:
                 rot=c_r[0]
@@ -86,7 +86,7 @@ def simu_obp(xk,n,pnts,maps,c_l,c_a,c_r,c_v,int_flg,flg):
 #
         elif int_flg == 2:
 #
-            tmp=xk[i*7]#abs(xk[i*4])%7 - 3.5
+            tmp=xk[i*7]*3.#abs(xk[i*4])%7 - 3.5
 #
             if tmp >= 0-3.5 and tmp < 1-3.5:
                 rot=c_r[0]
@@ -107,7 +107,7 @@ def simu_obp(xk,n,pnts,maps,c_l,c_a,c_r,c_v,int_flg,flg):
                 print('error simu')
                 exit()
 #
-            npts_i = np.dot(pts_i,rot)*np.array([1+xk[7*i+1:7*i+4]/4.])  + xk[7*i+4:7*i+7]*c_l
+            npts_i = np.dot(pts_i,rot)*np.array([2.+xk[7*i+1:7*i+4]])+xk[7*i+4:7*i+7]*c_l
 #
         else:
 #

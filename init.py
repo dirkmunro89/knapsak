@@ -81,10 +81,10 @@ def init(i,fln,log):
         log.info('Cleaned and decimated: ')
         log.info('-'*60)
 #
-        if obj.vtp.GetNumberOfCells() > 200:
+        if obj.vtp.GetNumberOfCells() > 1000:
             flt=vtk.vtkQuadricDecimation()
             flt.SetInputData(obj.vtp)
-            flt.SetTargetReduction((obj.vtp.GetNumberOfCells()-200)/obj.vtp.GetNumberOfCells())
+            flt.SetTargetReduction((obj.vtp.GetNumberOfCells()-1000)/obj.vtp.GetNumberOfCells())
             flt.SetVolumePreservation(True)
             flt.Update()
             obj.vtp=flt.GetOutput()
