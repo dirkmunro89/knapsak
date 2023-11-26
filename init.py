@@ -18,7 +18,7 @@ class Object():
 #
 #   init part data structures
 #
-def init(i,fln,log):
+def init(i,fln,c_e,log):
 #
     if 1 == 1:
 #
@@ -81,10 +81,10 @@ def init(i,fln,log):
         log.info('Cleaned and decimated: ')
         log.info('-'*60)
 #
-        if obj.vtp.GetNumberOfCells() > 1000:
+        if obj.vtp.GetNumberOfCells() > c_e:
             flt=vtk.vtkQuadricDecimation()
             flt.SetInputData(obj.vtp)
-            flt.SetTargetReduction((obj.vtp.GetNumberOfCells()-1000)/obj.vtp.GetNumberOfCells())
+            flt.SetTargetReduction((obj.vtp.GetNumberOfCells()-c_e)/obj.vtp.GetNumberOfCells())
             flt.SetVolumePreservation(True)
             flt.Update()
             obj.vtp=flt.GetOutput()

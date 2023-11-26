@@ -2,6 +2,7 @@
 import os
 import sys
 import vtk
+import time
 import numpy as np
 import logging as log
 from functools import partial
@@ -23,9 +24,31 @@ from util import tfmx, tran, appdata, woutfle
 #
 if __name__ == "__main__":
 #
+#   parameters
+#
+    c_l=np.array([200.,200.,200.]) # for in box
+    c_s=np.array([1.01,1.01,1.01])
+    c_s1=np.array([1.,1.,1.]) 
+    c_a=180
+    c_e=1000
+#
 #   get input arguments 
 #   - number to be stacked and
 #   - path to file
+#
+    t0=time.time()
+#
+    log.info('='*60)
+    tmp=" ".join(sys.argv)
+    c=0
+    while True:
+        try: tmp[c+60]
+        except: break
+        log.info(tmp[c:c+60])
+        c=c+60
+    log.info('='*60)
+#
+    log.info(tmp[c:])
 #
     meth_flg=sys.argv[1]
     visu_flg=int(sys.argv[2])
@@ -33,11 +56,11 @@ if __name__ == "__main__":
     c=0
     nums=[]; flns=[]
     while True:
-        try:
-            nums.append(int(sys.argv[c+3]))
-            flns.append(sys.argv[c+4])
-            c=c+2
+        try: sys.argv[c+3]
         except: break
+        nums.append(int(sys.argv[c+3]))
+        flns.append(sys.argv[c+4])
+        c=c+2
 #
     nobj=int(c/2) # number of unique parts (objects)
 #
@@ -68,7 +91,7 @@ if __name__ == "__main__":
 #
 #       make the object from the input file
 #
-        obj=init(i,flns[i],log)
+        obj=init(i,flns[i],c_e,log)
 #
 #       append to a list of the unique objects in the build
 #
@@ -123,11 +146,6 @@ if __name__ == "__main__":
     stcs = [obj.stc for obj in objs]
     vtcs = [obj.vtc for obj in objs]
 #
-#   parameters
-#
-    c_l=np.array([200.,200.,200.]) # for in box
-    c_a=180
-#
 #   set up predefined transforms
 #
     c_r=pretfms()
@@ -166,11 +184,11 @@ if __name__ == "__main__":
             outs_0.append(tmp)
 #
     if 'sox' in meth_flg:
-        app=appdata(opt_1_x,n,nums,maps,vtps_0,c_l,c_a,c_r,2,0,1)
+        app=appdata(opt_1_x,n,nums,maps,vtps_0,c_l,c_a,c_r,c_s1,2,0,1)
     elif 'six' in meth_flg:
-        app=appdata(opt_0_x,n,nums,maps,vtps_0,c_l,c_a,c_r,1,0,1)
+        app=appdata(opt_0_x,n,nums,maps,vtps_0,c_l,c_a,c_r,c_s1,1,0,1)
     else:
-        app=appdata(opt_1_x,n,nums,maps,vtps_0,c_l,c_a,c_r,0,0,1)
+        app=appdata(opt_1_x,n,nums,maps,vtps_0,c_l,c_a,c_r,c_s1,0,0,1)
 #
     if visu_flg:
         vis=rndr(app)
@@ -181,19 +199,19 @@ if __name__ == "__main__":
 #
 #       dual annealing full collisions (based on objects) continuous rotations
 #
-        simu_args=(n,cols,tfms,vtps,maps,c_l,c_r,c_a,c_v_0,0,0)
-        back_args=(n,cols,tfms,vtps,maps,c_l,c_r,c_a,c_v_0,nums,vtps,vtcs,0,0,log,vis)
-        res=dual_annealing(simu_obp_co,args=simu_args,bounds=opt_1_bds,seed=1,maxfun=1000000,\
-            callback=partial(back_da_co,args=back_args),no_local_search=True)
+        simu_args=(n,cols,tfms,vtps,maps,c_l,c_r,c_a,c_s,c_v_0,0,0)
+        back_args=(n,cols,tfms,vtps,maps,c_l,c_r,c_a,c_s,c_v_0,nums,vtps,vtcs,0,0,log,vis)
+        res=dual_annealing(simu_obp_co,args=simu_args,bounds=opt_1_bds,seed=1,maxiter=int(1e6),\
+            callback=partial(back_da_co,args=back_args),no_local_search=True,maxfun=int(10e6))
 #
     elif meth_flg == 'objsix':
 #
 #       dual annealing full collisions (based on objects) 6 rotations
 #
-        simu_args=(n,cols,tfms,vtps,maps,c_l,c_r,c_a,c_v_0,1,0)
-        back_args=(n,cols,tfms,vtps,maps,c_l,c_r,c_a,c_v_0,nums,vtps,vtcs,1,0,log,vis)
-        res=dual_annealing(simu_obp_co,args=simu_args,bounds=opt_0_bds,seed=1,maxfun=1000000,\
-            callback=partial(back_da_co,args=back_args))
+        simu_args=(n,cols,tfms,vtps,maps,c_l,c_r,c_a,c_s,c_v_0,1,0)
+        back_args=(n,cols,tfms,vtps,maps,c_l,c_r,c_a,c_s,c_v_0,nums,vtps,vtcs,1,0,log,vis)
+        res=dual_annealing(simu_obp_co,args=simu_args,bounds=opt_0_bds,seed=0,maxiter=int(1e6),\
+            callback=partial(back_da_co,args=back_args),no_local_search=True,maxfun=int(1e6))
 #
     elif meth_flg == 'boxsix':
 #
@@ -201,19 +219,18 @@ if __name__ == "__main__":
 #
         simu_args=(n,pnts,maps,c_l,c_a,c_r,c_v_0,1,0)
         back_args=(n,pnts,maps,c_l,c_a,c_r,c_v_0,nums,vtps,vtcs,1,0,log,vis)
-        res=dual_annealing(simu_obp,args=simu_args,bounds=opt_0_bds,seed=1,maxfun=1000000,\
-            callback=partial(back_da,args=back_args))
+        res=dual_annealing(simu_obp,args=simu_args,bounds=opt_0_bds,seed=0,maxiter=int(1e6),\
+            callback=partial(back_da,args=back_args),no_local_search=True,maxfun=int(10e6))
 #
     elif meth_flg == 'soxsix':
 #
 #       dual annealing axis aligned bounding box based collisions with 6 rotations
-#       and stretching of object. add.
+#       and scaling of object
 #
         simu_args=(n,pnts,maps,c_l,c_a,c_r,c_v_0,2,0)
         back_args=(n,pnts,maps,c_l,c_a,c_r,c_v_0,nums,vtps,vtcs,2,0,log,vis)
-        res=dual_annealing(simu_obp,args=simu_args,bounds=opt_1_bds,seed=0,\
-            callback=partial(back_da,args=back_args),no_local_search=True,\
-            maxiter=int(1e6),maxfun=int(10e6))
+        res=dual_annealing(simu_obp,args=simu_args,bounds=opt_1_bds,seed=0,maxiter=int(1e6),\
+            callback=partial(back_da,args=back_args),no_local_search=True,maxfun=int(10e6))
 #
     elif meth_flg == 'boxall':
 #
@@ -236,15 +253,15 @@ if __name__ == "__main__":
     for i in range(n):
 # 
         if 'sox' in meth_flg:
-            tfm=tfmx(res.x,i,c_l,c_a,c_r,None,2,0)
+            tfm=tfmx(res.x,i,c_l,c_a,c_r,c_s1,None,2,0)
             tmp=tran(vtps_0[maps[i]],tfm)
             woutfle(tmp,'build',-i-1)
         elif 'six' in meth_flg:
-            tfm=tfmx(res.x,i,c_l,c_a,c_r,None,1,0)
+            tfm=tfmx(res.x,i,c_l,c_a,c_r,c_s1,None,1,0)
             tmp=tran(vtps_0[maps[i]],tfm)
             woutfle(tmp,'build',-i-1)
         else:
-            tfm=tfmx(res.x,i,c_l,c_a,c_r,None,0,0)
+            tfm=tfmx(res.x,i,c_l,c_a,c_r,c_s1,None,0,0)
             tmp=tran(vtps_0[maps[i]],tfm)
             woutfle(tmp,'build',-i-1)
 #
@@ -253,25 +270,25 @@ if __name__ == "__main__":
         outs_0[i].extend(tmp)
 #
     if 'sox' in meth_flg:
-        app=appdata(res.x,n,nums,maps,vtps_0,c_l,c_a,c_r,2,0,1)
+        app=appdata(res.x,n,nums,maps,vtps_0,c_l,c_a,c_r,c_s1,2,0,1)
         woutfle(app.GetOutput(),'build',0)
-        app=appdata(res.x,n,nums,maps,vtps,c_l,c_a,c_r,2,0,1)
+        app=appdata(res.x,n,nums,maps,vtps,c_l,c_a,c_r,c_s1,2,0,1)
         woutfle(app.GetOutput(),'objec',0)
-        app=appdata(res.x,n,nums,maps,vtcs,c_l,c_a,c_r,2,0,1)
+        app=appdata(res.x,n,nums,maps,vtcs,c_l,c_a,c_r,c_s1,2,0,1)
         woutfle(app.GetOutput(),'cubes',0)
     elif 'six' in meth_flg:
-        app=appdata(res.x,n,nums,maps,vtps_0,c_l,c_a,c_r,1,0,1)
+        app=appdata(res.x,n,nums,maps,vtps_0,c_l,c_a,c_r,c_s1,1,0,1)
         woutfle(app.GetOutput(),'build',0)
-        app=appdata(res.x,n,nums,maps,vtps,c_l,c_a,c_r,1,0,1)
+        app=appdata(res.x,n,nums,maps,vtps,c_l,c_a,c_r,c_s1,1,0,1)
         woutfle(app.GetOutput(),'objec',0)
-        app=appdata(res.x,n,nums,maps,vtcs,c_l,c_a,c_r,1,0,1)
+        app=appdata(res.x,n,nums,maps,vtcs,c_l,c_a,c_r,c_s1,1,0,1)
         woutfle(app.GetOutput(),'cubes',0)
     else:
-        app=appdata(res.x,n,nums,maps,vtps_0,c_l,c_a,c_r,0,0,1)
+        app=appdata(res.x,n,nums,maps,vtps_0,c_l,c_a,c_r,c_s1,0,0,1)
         woutfle(app.GetOutput(),'build',0)
-        app=appdata(res.x,n,nums,maps,vtps,c_l,c_a,c_r,0,0,1)
+        app=appdata(res.x,n,nums,maps,vtps,c_l,c_a,c_r,c_s1,0,0,1)
         woutfle(app.GetOutput(),'objec',0)
-        app=appdata(res.x,n,nums,maps,vtcs,c_l,c_a,c_r,0,0,1)
+        app=appdata(res.x,n,nums,maps,vtcs,c_l,c_a,c_r,c_s1,0,0,1)
         woutfle(app.GetOutput(),'cubes',0)
 #
     with open('transforms.dat', 'w') as file:
@@ -280,5 +297,9 @@ if __name__ == "__main__":
     log.info('-'*60)
     log.info('Result written to build.vtp and transforms.dat')
     log.info('Load build.vtp in Paraview or with: python load.py build.vtp')
+    log.info('='*60)
+#
+    t1=time.time()
+    log.info('Time taken (s): %14.7e'%(t1-t0))
     log.info('='*60)
 #
