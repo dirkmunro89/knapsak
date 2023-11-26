@@ -1,0 +1,15 @@
+#
+# simple `makefile' to create and setup venv
+# see setup.py
+#
+
+.ONESHELL:
+
+export VENV := ./venv
+
+.PHONY: install
+install:
+	python3 -m venv $(VENV)
+	$(VENV)\Scripts\Activate.ps1
+	pip install --upgrade pip setuptools wheel
+	pip install -e .
