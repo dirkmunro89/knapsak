@@ -9,7 +9,7 @@ from util import appdata, woutfle
 #
 def back_da(xk,fk,context,args):
 #
-    [n,pnts,maps,c_l,c_a,c_r,c_v,nums,vtps,vtcs,int_flg,str_flg,log,vis]=args
+    [n,pnts,maps,c_l,c_a,c_r,c_v,nums,vtps,vtcs,int_flg,str_flg,log,vis,out]=args
 #
     [f,c]=simu_obp(xk,n,pnts,maps,c_l,c_a,c_r,c_v,int_flg,1)
     log.info('%14.3e %6d'%(fk,c))
@@ -21,9 +21,9 @@ def back_da(xk,fk,context,args):
             k=k+1
 #
     app=appdata(xk,n,nums,maps,vtcs,c_l,c_a,c_r,int_flg,str_flg,1)
-    woutfle(app.GetOutput(),'cubis',k)
+    woutfle(out,app.GetOutput(),'cubis',k)
     app=appdata(xk,n,nums,maps,vtps,c_l,c_a,c_r,int_flg,str_flg,1)
-    woutfle(app.GetOutput(),'objec',k)
+    woutfle(out,app.GetOutput(),'objec',k)
 #
     if vis:
 #

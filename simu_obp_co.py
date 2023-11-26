@@ -11,7 +11,7 @@ from util import tfmx, tran, appdata, woutfle
 #
 def back_da_co(xk,fk,context,args):
 #
-    [n,cols,tfms,vtps,maps,c_l,c_r,c_a,c_s,c_v,nums,vtps,vtcs,int_flg,str_flg,log,vis]=args
+    [n,cols,tfms,vtps,maps,c_l,c_r,c_a,c_s,c_v,nums,vtps,vtcs,int_flg,str_flg,log,vis,out]=args
 #
     [f,c]=simu_obp_co(xk,n,cols,tfms,vtps,maps,c_l,c_r,c_a,c_s,c_v,int_flg,1)
     log.info('%14.3e %6d'%(fk,c))
@@ -23,9 +23,9 @@ def back_da_co(xk,fk,context,args):
             k=k+1
 #
     app=appdata(xk,n,nums,maps,vtcs,c_l,c_a,c_r,np.ones(3),int_flg,str_flg,1)
-    woutfle(app.GetOutput(),'cubis',k)
+    woutfle(out,app.GetOutput(),'cubis',k)
     app=appdata(xk,n,nums,maps,vtps,c_l,c_a,c_r,np.ones(3),int_flg,str_flg,1)
-    woutfle(app.GetOutput(),'objec',k)
+    woutfle(out,app.GetOutput(),'objec',k)
 #
     if vis:
 #

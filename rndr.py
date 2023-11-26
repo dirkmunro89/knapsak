@@ -9,7 +9,8 @@ def rndr(app):
 #
     act = vtk.vtkActor()
     act.SetMapper(mpr)
-    act.GetProperty().SetOpacity(0.95)
+    act.GetProperty().SetOpacity(1)
+    act.GetProperty().SetBackfaceCulling(1)
 #
     ren = vtk.vtkRenderer()
     ren.AddActor(act)
@@ -31,7 +32,7 @@ def rndr(app):
     box_act = vtk.vtkActor()
     box_act.SetMapper(box_mpr)
     box_act.GetProperty().SetColor(0,0,0)
-    box_act.GetProperty().SetOpacity(0.75)
+    box_act.GetProperty().SetOpacity(1)
 #
     ren.AddActor(box_act)
 #
@@ -41,8 +42,8 @@ def rndr(app):
 #
     ren.GetActiveCamera().ParallelProjectionOn()
 #
-    interact = vtk.vtkRenderWindowInteractor()
-    interact.SetRenderWindow(win)
+#   ict=vtk.vtkRenderWindowInteractor()
+#   ict.SetRenderWindow(win)
 #
     win.SetWindowName('Stacking')
 #

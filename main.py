@@ -9,10 +9,6 @@ from functools import partial
 from vtk.util import numpy_support
 from scipy.optimize import minimize, dual_annealing
 #
-level=log.INFO
-format   = '%(message)s'
-handlers = [log.FileHandler('history.log'), log.StreamHandler()]
-log.basicConfig(level = level, format = format, handlers = handlers)
 #
 from rndr import rndr
 #
@@ -37,6 +33,18 @@ if __name__ == "__main__":
 #   - path to file
 #
     t0=time.time()
+    out='./out_%d/'%t0
+    if not os.path.isdir(out):
+        os.makedirs(out)
+    else:
+        print('error')
+        sys.exit(1)
+#
+    level=log.INFO
+    format   = '%(message)s'
+    handlers=[log.FileHandler('history_%d.log'%t0), log.StreamHandler()]
+    log.basicConfig(level=level, format=format, handlers=handlers)
+#
 #
     log.info('='*60)
     tmp=" ".join(sys.argv)
@@ -46,9 +54,11 @@ if __name__ == "__main__":
         except: break
         log.info(tmp[c:c+60])
         c=c+60
-    log.info('='*60)
 #
     log.info(tmp[c:])
+    log.info('-'*60)
+    log.info('Writing output to:\n%s'%out)
+    log.info('='*60)
 #
     meth_flg=sys.argv[1]
     visu_flg=int(sys.argv[2])
@@ -69,19 +79,6 @@ if __name__ == "__main__":
     n=0 
     c_v_0=0.
     c_v_1=0.
-#
-    flg=0
-    for file in os.listdir('./'):
-        filename = os.fsdecode(file)
-        if filename.endswith(".vtp"):
-            flg=1
-            break
-#
-    if flg == 1:
-        log.info('Please (re)move all vtp files from current directory (with e.g. make clean).')
-        log.info('Exiting.')
-        sys.exit(1)
-    
 #
     for i in range(nobj):
 #
@@ -200,7 +197,7 @@ if __name__ == "__main__":
 #       dual annealing full collisions (based on objects) continuous rotations
 #
         simu_args=(n,cols,tfms,vtps,maps,c_l,c_r,c_a,c_s,c_v_0,0,0)
-        back_args=(n,cols,tfms,vtps,maps,c_l,c_r,c_a,c_s,c_v_0,nums,vtps,vtcs,0,0,log,vis)
+        back_args=(n,cols,tfms,vtps,maps,c_l,c_r,c_a,c_s,c_v_0,nums,vtps,vtcs,0,0,log,vis,out)
         res=dual_annealing(simu_obp_co,args=simu_args,bounds=opt_1_bds,seed=1,maxiter=int(1e6),\
             callback=partial(back_da_co,args=back_args),no_local_search=True,maxfun=int(10e6))
 #
@@ -209,7 +206,7 @@ if __name__ == "__main__":
 #       dual annealing full collisions (based on objects) 6 rotations
 #
         simu_args=(n,cols,tfms,vtps,maps,c_l,c_r,c_a,c_s,c_v_0,1,0)
-        back_args=(n,cols,tfms,vtps,maps,c_l,c_r,c_a,c_s,c_v_0,nums,vtps,vtcs,1,0,log,vis)
+        back_args=(n,cols,tfms,vtps,maps,c_l,c_r,c_a,c_s,c_v_0,nums,vtps,vtcs,1,0,log,vis,out)
         res=dual_annealing(simu_obp_co,args=simu_args,bounds=opt_0_bds,seed=0,maxiter=int(1e6),\
             callback=partial(back_da_co,args=back_args),no_local_search=True,maxfun=int(1e6))
 #
@@ -218,7 +215,7 @@ if __name__ == "__main__":
 #       dual annealing axis aligned bounding box based collisions with 6 rotations
 #
         simu_args=(n,pnts,maps,c_l,c_a,c_r,c_v_0,1,0)
-        back_args=(n,pnts,maps,c_l,c_a,c_r,c_v_0,nums,vtps,vtcs,1,0,log,vis)
+        back_args=(n,pnts,maps,c_l,c_a,c_r,c_v_0,nums,vtps,vtcs,1,0,log,vis,out)
         res=dual_annealing(simu_obp,args=simu_args,bounds=opt_0_bds,seed=0,maxiter=int(1e6),\
             callback=partial(back_da,args=back_args),no_local_search=True,maxfun=int(10e6))
 #
@@ -228,7 +225,7 @@ if __name__ == "__main__":
 #       and scaling of object
 #
         simu_args=(n,pnts,maps,c_l,c_a,c_r,c_v_0,2,0)
-        back_args=(n,pnts,maps,c_l,c_a,c_r,c_v_0,nums,vtps,vtcs,2,0,log,vis)
+        back_args=(n,pnts,maps,c_l,c_a,c_r,c_v_0,nums,vtps,vtcs,2,0,log,vis,out)
         res=dual_annealing(simu_obp,args=simu_args,bounds=opt_1_bds,seed=0,maxiter=int(1e6),\
             callback=partial(back_da,args=back_args),no_local_search=True,maxfun=int(10e6))
 #
@@ -237,7 +234,7 @@ if __name__ == "__main__":
 #       dual annealing axis aligned bounding box based collisions with all rotations
 #
         simu_args=(n,pnts,maps,c_l,c_a,c_r,c_v_0,0,0)
-        back_args=(n,pnts,maps,c_l,c_a,c_r,c_v_0,nums,vtps,vtcs,0,0,log,vis)
+        back_args=(n,pnts,maps,c_l,c_a,c_r,c_v_0,nums,vtps,vtcs,0,0,log,vis,out)
         res=dual_annealing(simu_obp,args=simu_args,bounds=opt_1_bds,seed=1,maxfun=1000000,\
             callback=partial(back_da,args=back_args))
 #
@@ -255,15 +252,15 @@ if __name__ == "__main__":
         if 'sox' in meth_flg:
             tfm=tfmx(res.x,i,c_l,c_a,c_r,c_s1,None,2,0)
             tmp=tran(vtps_0[maps[i]],tfm)
-            woutfle(tmp,'build',-i-1)
+            woutfle(out,tmp,'build',-i-1)
         elif 'six' in meth_flg:
             tfm=tfmx(res.x,i,c_l,c_a,c_r,c_s1,None,1,0)
             tmp=tran(vtps_0[maps[i]],tfm)
-            woutfle(tmp,'build',-i-1)
+            woutfle(out,tmp,'build',-i-1)
         else:
             tfm=tfmx(res.x,i,c_l,c_a,c_r,c_s1,None,0,0)
             tmp=tran(vtps_0[maps[i]],tfm)
-            woutfle(tmp,'build',-i-1)
+            woutfle(out,tmp,'build',-i-1)
 #
         tmp=[0.]*16
         tfm.GetMatrix().DeepCopy(tmp,tfm.GetMatrix())
@@ -271,27 +268,27 @@ if __name__ == "__main__":
 #
     if 'sox' in meth_flg:
         app=appdata(res.x,n,nums,maps,vtps_0,c_l,c_a,c_r,c_s1,2,0,1)
-        woutfle(app.GetOutput(),'build',0)
+        woutfle(out,app.GetOutput(),'build',0)
         app=appdata(res.x,n,nums,maps,vtps,c_l,c_a,c_r,c_s1,2,0,1)
-        woutfle(app.GetOutput(),'objec',0)
+        woutfle(out,app.GetOutput(),'objec',0)
         app=appdata(res.x,n,nums,maps,vtcs,c_l,c_a,c_r,c_s1,2,0,1)
-        woutfle(app.GetOutput(),'cubes',0)
+        woutfle(out,app.GetOutput(),'cubes',0)
     elif 'six' in meth_flg:
         app=appdata(res.x,n,nums,maps,vtps_0,c_l,c_a,c_r,c_s1,1,0,1)
-        woutfle(app.GetOutput(),'build',0)
+        woutfle(out,app.GetOutput(),'build',0)
         app=appdata(res.x,n,nums,maps,vtps,c_l,c_a,c_r,c_s1,1,0,1)
-        woutfle(app.GetOutput(),'objec',0)
+        woutfle(out,app.GetOutput(),'objec',0)
         app=appdata(res.x,n,nums,maps,vtcs,c_l,c_a,c_r,c_s1,1,0,1)
-        woutfle(app.GetOutput(),'cubes',0)
+        woutfle(out,app.GetOutput(),'cubes',0)
     else:
         app=appdata(res.x,n,nums,maps,vtps_0,c_l,c_a,c_r,c_s1,0,0,1)
-        woutfle(app.GetOutput(),'build',0)
+        woutfle(out,app.GetOutput(),'build',0)
         app=appdata(res.x,n,nums,maps,vtps,c_l,c_a,c_r,c_s1,0,0,1)
-        woutfle(app.GetOutput(),'objec',0)
+        woutfle(out,app.GetOutput(),'objec',0)
         app=appdata(res.x,n,nums,maps,vtcs,c_l,c_a,c_r,c_s1,0,0,1)
-        woutfle(app.GetOutput(),'cubes',0)
+        woutfle(out,app.GetOutput(),'cubes',0)
 #
-    with open('transforms.dat', 'w') as file:
+    with open(out+'transforms.dat', 'w') as file:
         file.writelines('\t'.join(str(j) for j in i) + '\n' for i in outs_0)
 #
     log.info('-'*60)

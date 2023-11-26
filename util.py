@@ -188,18 +188,18 @@ def tran(vtp,tfm):
 #
     return tmp
 #
-def woutfle(vtp,fln,k):
+def woutfle(out,vtp,fln,k):
 #
     writer = vtk.vtkXMLPolyDataWriter()
     writer.SetInputData(vtp)
     writer.SetDataModeToBinary()
     writer.SetCompressorTypeToNone()
     if k < 0:
-        writer.SetFileName(fln+'_%s.vtp'%(chr(ord('`')+(-k))))
+        writer.SetFileName(out+fln+'_%s.vtp'%(chr(ord('`')+(-k))))
     elif k == 0:
-        writer.SetFileName(fln+'.vtp')
+        writer.SetFileName(out+fln+'.vtp')
     else:
-        writer.SetFileName(fln+'_%d.vtp'%k)
+        writer.SetFileName(out+fln+'_%d.vtp'%k)
     writer.Update()
 #
 def woutstr(vtp):

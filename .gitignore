@@ -1,0 +1,7 @@
+*.log
+/out_*
+*.egg-info
+__pycache__
+trsh
+/*env/
+/env/
