@@ -15,7 +15,7 @@ def back_da(xk,fk,context,args):
     log.info('%14.3e %6d'%(fk,c))
 #
     k=1
-    for file in os.listdir('./'):
+    for file in os.listdir(out):
         filename = os.fsdecode(file)
         if 'cubis_' in filename and filename.endswith(".vtp"):
             k=k+1

@@ -166,6 +166,8 @@ def init(i,fln,c_e,log):
 #
         obj.pts=numpy_support.vtk_to_numpy(obj.vtc.GetPoints().GetData())
 #
+        obj.ext=np.amax(np.linalg.norm(numpy_support.vtk_to_numpy(obj.vtp.GetPoints().GetData()),axis=1))
+#
         return obj
 #
 def pretfms():

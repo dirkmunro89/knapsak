@@ -60,8 +60,8 @@ if __name__ == "__main__":
     log.info('Writing output to:\n%s'%out)
     log.info('='*60)
 #
-    meth_flg=sys.argv[1]
-    visu_flg=int(sys.argv[2])
+    opt_str=sys.argv[1]
+    vis_flg=int(sys.argv[2])
 #
     c=0
     nums=[]; flns=[]
@@ -142,6 +142,7 @@ if __name__ == "__main__":
     vtps = [obj.vtp for obj in objs]
     stcs = [obj.stc for obj in objs]
     vtcs = [obj.vtc for obj in objs]
+    exts = [obj.ext for obj in objs]
 #
 #   set up predefined transforms
 #
@@ -180,37 +181,37 @@ if __name__ == "__main__":
             tfm.GetMatrix().DeepCopy(tmp,tfm.GetMatrix())
             outs_0.append(tmp)
 #
-    if 'sox' in meth_flg:
+    if 'sox' in opt_str:
         app=appdata(opt_1_x,n,nums,maps,vtps_0,c_l,c_a,c_r,c_s1,2,0,1)
-    elif 'six' in meth_flg:
+    elif 'six' in opt_str:
         app=appdata(opt_0_x,n,nums,maps,vtps_0,c_l,c_a,c_r,c_s1,1,0,1)
     else:
         app=appdata(opt_1_x,n,nums,maps,vtps_0,c_l,c_a,c_r,c_s1,0,0,1)
 #
-    if visu_flg:
+    if vis_flg:
         vis=rndr(app)
     else:
         vis=None
 #
-    if meth_flg == 'objall':
+    if opt_str == 'objall':
 #
 #       dual annealing full collisions (based on objects) continuous rotations
 #
-        simu_args=(n,cols,tfms,vtps,maps,c_l,c_r,c_a,c_s,c_v_0,0,0)
-        back_args=(n,cols,tfms,vtps,maps,c_l,c_r,c_a,c_s,c_v_0,nums,vtps,vtcs,0,0,log,vis,out)
+        simu_args=(n,cols,tfms,vtps,exts,maps,c_l,c_r,c_a,c_s,c_v_0,0,0)
+        back_args=(n,cols,tfms,vtps,exts,maps,c_l,c_r,c_a,c_s,c_v_0,nums,vtps,vtcs,0,0,log,vis,out)
         res=dual_annealing(simu_obp_co,args=simu_args,bounds=opt_1_bds,seed=1,maxiter=int(1e6),\
-            callback=partial(back_da_co,args=back_args),no_local_search=True,maxfun=int(10e6))
+            callback=partial(back_da_co,args=back_args),no_local_search=True,maxfun=int(1e6))
 #
-    elif meth_flg == 'objsix':
+    elif opt_str == 'objsix':
 #
 #       dual annealing full collisions (based on objects) 6 rotations
 #
-        simu_args=(n,cols,tfms,vtps,maps,c_l,c_r,c_a,c_s,c_v_0,1,0)
-        back_args=(n,cols,tfms,vtps,maps,c_l,c_r,c_a,c_s,c_v_0,nums,vtps,vtcs,1,0,log,vis,out)
+        simu_args=(n,cols,tfms,vtps,exts,maps,c_l,c_r,c_a,c_s,c_v_0,1,0)
+        back_args=(n,cols,tfms,vtps,exts,maps,c_l,c_r,c_a,c_s,c_v_0,nums,vtps,vtcs,1,0,log,vis,out)
         res=dual_annealing(simu_obp_co,args=simu_args,bounds=opt_0_bds,seed=0,maxiter=int(1e6),\
             callback=partial(back_da_co,args=back_args),no_local_search=True,maxfun=int(1e6))
 #
-    elif meth_flg == 'boxsix':
+    elif opt_str == 'boxsix':
 #
 #       dual annealing axis aligned bounding box based collisions with 6 rotations
 #
@@ -219,7 +220,7 @@ if __name__ == "__main__":
         res=dual_annealing(simu_obp,args=simu_args,bounds=opt_0_bds,seed=0,maxiter=int(1e6),\
             callback=partial(back_da,args=back_args),no_local_search=True,maxfun=int(10e6))
 #
-    elif meth_flg == 'soxsix':
+    elif opt_str == 'soxsix':
 #
 #       dual annealing axis aligned bounding box based collisions with 6 rotations
 #       and scaling of object
@@ -229,14 +230,14 @@ if __name__ == "__main__":
         res=dual_annealing(simu_obp,args=simu_args,bounds=opt_1_bds,seed=0,maxiter=int(1e6),\
             callback=partial(back_da,args=back_args),no_local_search=True,maxfun=int(10e6))
 #
-    elif meth_flg == 'boxall':
+    elif opt_str == 'boxall':
 #
 #       dual annealing axis aligned bounding box based collisions with all rotations
 #
         simu_args=(n,pnts,maps,c_l,c_a,c_r,c_v_0,0,0)
         back_args=(n,pnts,maps,c_l,c_a,c_r,c_v_0,nums,vtps,vtcs,0,0,log,vis,out)
-        res=dual_annealing(simu_obp,args=simu_args,bounds=opt_1_bds,seed=1,maxfun=1000000,\
-            callback=partial(back_da,args=back_args))
+        res=dual_annealing(simu_obp,args=simu_args,bounds=opt_1_bds,seed=1,maxiter=int(1e6),\
+            callback=partial(back_da,args=back_args),no_local_search=True,maxfun=int(10e6))
 #
     else:
         log.info('error')
@@ -249,11 +250,11 @@ if __name__ == "__main__":
 #
     for i in range(n):
 # 
-        if 'sox' in meth_flg:
+        if 'sox' in opt_str:
             tfm=tfmx(res.x,i,c_l,c_a,c_r,c_s1,None,2,0)
             tmp=tran(vtps_0[maps[i]],tfm)
             woutfle(out,tmp,'build',-i-1)
-        elif 'six' in meth_flg:
+        elif 'six' in opt_str:
             tfm=tfmx(res.x,i,c_l,c_a,c_r,c_s1,None,1,0)
             tmp=tran(vtps_0[maps[i]],tfm)
             woutfle(out,tmp,'build',-i-1)
@@ -266,14 +267,14 @@ if __name__ == "__main__":
         tfm.GetMatrix().DeepCopy(tmp,tfm.GetMatrix())
         outs_0[i].extend(tmp)
 #
-    if 'sox' in meth_flg:
+    if 'sox' in opt_str:
         app=appdata(res.x,n,nums,maps,vtps_0,c_l,c_a,c_r,c_s1,2,0,1)
         woutfle(out,app.GetOutput(),'build',0)
         app=appdata(res.x,n,nums,maps,vtps,c_l,c_a,c_r,c_s1,2,0,1)
         woutfle(out,app.GetOutput(),'objec',0)
         app=appdata(res.x,n,nums,maps,vtcs,c_l,c_a,c_r,c_s1,2,0,1)
         woutfle(out,app.GetOutput(),'cubes',0)
-    elif 'six' in meth_flg:
+    elif 'six' in opt_str:
         app=appdata(res.x,n,nums,maps,vtps_0,c_l,c_a,c_r,c_s1,1,0,1)
         woutfle(out,app.GetOutput(),'build',0)
         app=appdata(res.x,n,nums,maps,vtps,c_l,c_a,c_r,c_s1,1,0,1)
