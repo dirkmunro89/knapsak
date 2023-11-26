@@ -11,6 +11,14 @@ Given a collection of objects, find the translation and rotation which has to be
 
 We take the sum of the volumes of the axis-aligned bounding boxes of all the objects, individually, as a reference volume by which the objective is normalised. This is of course the smallest volume container that can possibily be achieved if all the objects are axis-aligned cuboids (of particular sizes), or modelled as such.
 
+## Setup
+
+On Linux
+
+`python3 -m venv ./env`
+`source env/bin/activate`
+`pip install -r requirements.txt`
+
 ## References
 <a id="1">[1]</a>
 Alt, H., & Scharf, N. (2018). 
