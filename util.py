@@ -46,6 +46,25 @@ def tfmx(x,i,c_l,c_a,c_r,tfm,int_flg,rev_flg):
 #           tfm.Scale(c_s,c_s,c_s)
             tfm.Translate(c_l[0]*x[c*4+1], c_l[1]*x[c*4+2], c_l[2]*x[c*4+3])
 #
+    elif int_flg == 24:
+#
+        tmp=x[c*4]*12.#abs(x[c*4])%7 - 3.5
+#
+        for i in range(25):
+            if tmp >= i-12.5 and tmp < i+1-12.5:
+                r=R.from_matrix(c_r[i].T).as_rotvec()
+                break
+#
+        tmp=max(np.linalg.norm(r),1e-9)
+        if rev_flg:
+            tfm.Translate(-c_l[0]*x[c*4+1], -c_l[1]*x[c*4+2], -c_l[2]*x[c*4+3])
+#           tfm.Scale(1./c_s,1./c_s,1./c_s)
+            tfm.RotateWXYZ(-np.rad2deg(tmp),r[0]/tmp,r[1]/tmp,r[2]/tmp)
+        else:
+            tfm.RotateWXYZ(np.rad2deg(tmp),r[0]/tmp,r[1]/tmp,r[2]/tmp)
+#           tfm.Scale(c_s,c_s,c_s)
+            tfm.Translate(c_l[0]*x[c*4+1], c_l[1]*x[c*4+2], c_l[2]*x[c*4+3])
+#
     elif int_flg == 2:
 #
         tmp=x[c*7]*3.#abs(x[c*4])%7 - 3.5
@@ -82,13 +101,20 @@ def tfmx(x,i,c_l,c_a,c_r,tfm,int_flg,rev_flg):
     else:
 #
         if rev_flg:
-            tfm.Translate(-c_l[0]*x[c*7+4], -c_l[1]*x[c*7+5], -c_l[2]*x[c*7+6])
+            tfm.Translate(-c_l[0]*x[c*6+3], -c_l[1]*x[c*6+4], -c_l[2]*x[c*6+5])
 #           tfm.Scale(1./c_s,1./c_s,1./c_s)
-            tfm.RotateWXYZ(-c_a*x[c*7], x[c*7+1], x[c*7+2], x[c*7+3])
+            tmp=x[c*6:c*6+3]
+            nrm=np.linalg.norm(tmp)
+            tmp=tmp/max(nrm,1e-9)
+            tfm.RotateWXYZ(-np.rad2deg(c_a*nrm), tmp[0], tmp[1], tmp[2])
         else:
-            tfm.RotateWXYZ(c_a*x[c*7], x[c*7+1], x[c*7+2], x[c*7+3])
+            tmp=x[c*6:c*6+3]
+            nrm=np.linalg.norm(tmp)
+            tmp=tmp/max(nrm,1e-9)
+            tfm.RotateWXYZ(np.rad2deg(c_a*nrm), tmp[0], tmp[1], tmp[2])
+#           tfm.RotateWXYZ(c_a*x[c*6], x[c*6+1], x[c*6+2], x[c*6+3])
 #           tfm.Scale(c_s,c_s,c_s)
-            tfm.Translate(c_l[0]*x[c*7+4], c_l[1]*x[c*7+5], c_l[2]*x[c*7+6])
+            tfm.Translate(c_l[0]*x[c*6+3], c_l[1]*x[c*6+4], c_l[2]*x[c*6+5])
 #
     tfm.Update()
 #

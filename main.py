@@ -12,7 +12,7 @@ from scipy.optimize import minimize, dual_annealing
 #
 from rndr import rndr
 #
-from init import init, pretfms
+from init import init, pretfms6, pretfms24
 from simu_obp import simu_obp, back_da
 from simu_obp_co import simu_obp_co, back_da_co
 #
@@ -24,7 +24,7 @@ if __name__ == "__main__":
 #
     c_l=np.array([200.,200.,200.]) # for in box
     c_s=1.01
-    c_a=180
+    c_a=np.pi/np.sqrt(3) # normalised to max magnitude of rotation vector (1,1,1)
     c_e=1000
 #
 #   get input arguments 
@@ -145,7 +145,12 @@ if __name__ == "__main__":
 #
 #   set up predefined transforms
 #
-    c_r=pretfms()
+    if '24r' in opt_str:
+        c_r=pretfms24()
+    elif 'six' in opt_str:
+        c_r=pretfms6()
+    else:
+        c_r=[]
 #
 #   set bounds and integer variables
 #
@@ -158,11 +163,11 @@ if __name__ == "__main__":
     opt_1_bds=[(-1.,1.) for i in range(7*n)]; 
     opt_1_x=np.array([0 for i in range(7*n)])
     opt_1_bds=tuple(opt_1_bds)
+    opt_11_bds=[(-1.,1.) for i in range(6*n)]; 
+    opt_11_x=np.array([0 for i in range(6*n)])
+    opt_11_bds=tuple(opt_1_bds)
 #
-    if 'obj' in opt_str:
-        log.info('%6s%15s%15s%16s'%('k','F_0 (opt)','F_0 (sim)','collisions'))
-    else:
-        log.info('%14s%16s'%('F_0','collisions'))
+    log.info('%6s%15s%15s%16s'%('k','F_0 (opt)','F_0 (sim)','collisions'))
     log.info('-'*60)
 #
     outs_0=[]
@@ -187,8 +192,10 @@ if __name__ == "__main__":
         app=appdata(opt_1_x,n,nums,maps,vtps_0,c_l,c_a,c_r,2,0,1)
     elif 'six' in opt_str:
         app=appdata(opt_0_x,n,nums,maps,vtps_0,c_l,c_a,c_r,1,0,1)
+    elif '24r' in opt_str:
+        app=appdata(opt_0_x,n,nums,maps,vtps_0,c_l,c_a,c_r,24,0,1)
     else:
-        app=appdata(opt_1_x,n,nums,maps,vtps_0,c_l,c_a,c_r,0,0,1)
+        app=appdata(opt_11_x,n,nums,maps,vtps_0,c_l,c_a,c_r,0,0,1)
 #
     if vis_flg:
         vis=rndr(app)
@@ -201,15 +208,15 @@ if __name__ == "__main__":
 #
         simu_args=(n,cols,tfms,vtps,exts,maps,c_l,c_r,c_a,c_v_0,0,0)
         back_args=(n,cols,tfms,vtps,exts,maps,c_l,c_r,c_a,c_v_0,nums,vtps,vtcs,0,0,log,vis,out)
-        res=dual_annealing(simu_obp_co,args=simu_args,bounds=opt_1_bds,seed=0,maxiter=int(1e6),\
+        res=dual_annealing(simu_obp_co,args=simu_args,bounds=opt_11_bds,seed=0,maxiter=int(1e6),\
             callback=partial(back_da_co,args=back_args),no_local_search=True,maxfun=int(1e6))
 #
-    elif opt_str == 'objsix':
+    elif opt_str == 'obj24r':
 #
 #       dual annealing full collisions (based on objects) 6 rotations
 #
-        simu_args=(n,cols,tfms,vtps,exts,maps,c_l,c_r,c_a,c_v_0,1,0)
-        back_args=(n,cols,tfms,vtps,exts,maps,c_l,c_r,c_a,c_v_0,nums,vtps,vtcs,1,0,log,vis,out)
+        simu_args=(n,cols,tfms,vtps,exts,maps,c_l,c_r,c_a,c_v_0,24,0)
+        back_args=(n,cols,tfms,vtps,exts,maps,c_l,c_r,c_a,c_v_0,nums,vtps,vtcs,24,0,log,vis,out)
         res=dual_annealing(simu_obp_co,args=simu_args,bounds=opt_0_bds,seed=0,maxiter=int(1e6),\
             callback=partial(back_da_co,args=back_args),no_local_search=True,maxfun=int(1e6))
 #
@@ -260,6 +267,10 @@ if __name__ == "__main__":
             tfm=tfmx(res.x,i,c_l,c_a,c_r,None,1,0)
             tmp=tran(vtps_0[maps[i]],tfm)
             woutfle(out,tmp,'build',-i-1)
+        elif '24r' in opt_str:
+            tfm=tfmx(res.x,i,c_l,c_a,c_r,None,24,0)
+            tmp=tran(vtps_0[maps[i]],tfm)
+            woutfle(out,tmp,'build',-i-1)
         else:
             tfm=tfmx(res.x,i,c_l,c_a,c_r,None,0,0)
             tmp=tran(vtps_0[maps[i]],tfm)
@@ -282,6 +293,13 @@ if __name__ == "__main__":
         app=appdata(res.x,n,nums,maps,vtps,c_l,c_a,c_r,1,0,1)
         woutfle(out,app.GetOutput(),'objec',0)
         app=appdata(res.x,n,nums,maps,vtcs,c_l,c_a,c_r,1,0,1)
+        woutfle(out,app.GetOutput(),'cubes',0)
+    elif '24r' in opt_str:
+        app=appdata(res.x,n,nums,maps,vtps_0,c_l,c_a,c_r,24,0,1)
+        woutfle(out,app.GetOutput(),'build',0)
+        app=appdata(res.x,n,nums,maps,vtps,c_l,c_a,c_r,24,0,1)
+        woutfle(out,app.GetOutput(),'objec',0)
+        app=appdata(res.x,n,nums,maps,vtcs,c_l,c_a,c_r,24,0,1)
         woutfle(out,app.GetOutput(),'cubes',0)
     else:
         app=appdata(res.x,n,nums,maps,vtps_0,c_l,c_a,c_r,0,0,1)

@@ -25,16 +25,17 @@ Pack _n_ copies of each _mesh_ into an axis-aligned bounding box with a minimize
 python main.py opt_str vis_flg n1 mesh1.stl n2 mesh2.stl ...
 ```
 _opt_str_ specifies the variant of the problem, and may take the following values:
-- _boxsix_ : axis-aligned bounding box collisions with 6 rotations
-- _soxsix_ : axis-aligned bounding box collisions with 6 rotations and scaling along each coordinate axis
-- _objsix_ : decimated STL mesh collisions with 6 rotations
-- _objall_ : decimated STL mesh collisions with all rotations
+- _boxsix_ : axis-aligned bounding box collisions with 6 rotations.
+- _soxsix_ : axis-aligned bounding box collisions with 6 rotations and scaling along each coordinate axis.
+- _obj24r_ : decimated STL mesh collisions with 24 rotations; all those [rotations](https://www.euclideanspace.com/maths/geometry/rotations/axisAngle/examples/index.htm) which map a cube unto itself.
+- _objall_ : decimated STL mesh collisions with all rotations.
 
 _vis_flg_ : switches on (1) or off (0) rendering the latest minimum during the optimization process.
 
 Note:
 - A decimation procedure, which reduces the number of triangles in each mesh to 1000, is applied internally.
 - Meshes are increased in size by 1\% in the STL-mesh-based collision detection.   
+- The simulated (dual) annealing algorithm is set to terminate after 1 million function evaluations in the case of STL mesh collision detection, and 10 million evaluations in the case of axis-aligned bounding box based collisions.   
 
 ## Examples
 

@@ -98,6 +98,10 @@ def init(i,fln,c_e,c_s,log):
 #
         obj.cen=flt.GetCenter()
 #
+        if 1 == 0:
+            tmp=obj.vtp.GetBounds()
+            obj.cen= np.array([tmp[1]-tmp[0],tmp[3]-tmp[2],tmp[5]-tmp[4]])/2.
+#
         prp = vtk.vtkMassProperties()
         prp.SetInputData(obj.vtp)
         prp.Update()
@@ -181,7 +185,7 @@ def init(i,fln,c_e,c_s,log):
 #
         return obj
 #
-def pretfms():
+def pretfms6():
 #
     c_r=[]
     r=R.from_rotvec(0 * np.array([1.,1.,1.])).as_matrix().T 
@@ -197,6 +201,69 @@ def pretfms():
     r=R.from_rotvec(2*np.pi/3 * np.array([-1/np.sqrt(3),1/np.sqrt(3),-1/np.sqrt(3)])).as_matrix().T
     c_r.append(r)
     r=R.from_rotvec(0 * np.array([1.,1.,1.])).as_matrix().T 
+    c_r.append(r)
+#
+    return c_r
+#
+def pretfms24():
+#
+    c_r=[]
+    #
+    r=R.from_rotvec(0.          * np.array([0,0,0])).as_matrix().T
+    c_r.append(r)
+    r=R.from_rotvec(np.pi/2     * np.array([0,1,0])).as_matrix().T
+    c_r.append(r)
+    r=R.from_rotvec(np.pi       * np.array([0,1,0])).as_matrix().T
+    c_r.append(r)
+    r=R.from_rotvec(np.pi/2     * np.array([0,-1,0])).as_matrix().T
+    c_r.append(r)
+    #
+    r=R.from_rotvec(np.pi/2     * np.array([0,0,1])).as_matrix().T
+    c_r.append(r)
+    r=R.from_rotvec(2*np.pi/3   * np.array([1,1,1])/np.sqrt(3)).as_matrix().T
+    c_r.append(r)
+    r=R.from_rotvec(np.pi       * np.array([1,1,0])/np.sqrt(2)).as_matrix().T
+    c_r.append(r)
+    r=R.from_rotvec(2*np.pi/3   * np.array([-1,-1,1])/np.sqrt(3)).as_matrix().T
+    c_r.append(r)
+    #
+    r=R.from_rotvec(np.pi/2     * np.array([0,0,-1])).as_matrix().T
+    c_r.append(r)
+    r=R.from_rotvec(2*np.pi/3   * np.array([-1,1,-1])/np.sqrt(3)).as_matrix().T
+    c_r.append(r)
+    r=R.from_rotvec(np.pi       * np.array([-1,1.,0])/np.sqrt(2)).as_matrix().T
+    c_r.append(r)
+    r=R.from_rotvec(2*np.pi/3   * np.array([1,-1,-1])/np.sqrt(3)).as_matrix().T
+    c_r.append(r)
+    #
+    r=R.from_rotvec(np.pi/2     * np.array([1,0,0])).as_matrix().T
+    c_r.append(r)
+    r=R.from_rotvec(2*np.pi/3   * np.array([1,1,-1])/np.sqrt(3)).as_matrix().T
+    c_r.append(r)
+    r=R.from_rotvec(np.pi       * np.array([0,1,-1])/np.sqrt(2)).as_matrix().T
+    c_r.append(r)
+    r=R.from_rotvec(2*np.pi/3   * np.array([1,-1,1])/np.sqrt(3)).as_matrix().T
+    c_r.append(r)
+    #
+    r=R.from_rotvec(np.pi       * np.array([1,0,0])).as_matrix().T
+    c_r.append(r)
+    r=R.from_rotvec(np.pi       * np.array([1,0,-1])/np.sqrt(2)).as_matrix().T
+    c_r.append(r)
+    r=R.from_rotvec(np.pi       * np.array([0,0,1])).as_matrix().T
+    c_r.append(r)
+    r=R.from_rotvec(np.pi       * np.array([1,0,1])/np.sqrt(2)).as_matrix().T
+    c_r.append(r)
+    #
+    r=R.from_rotvec(np.pi/2.    * np.array([-1,0,0])).as_matrix().T
+    c_r.append(r)
+    r=R.from_rotvec(2*np.pi/3.  * np.array([-1,1,1])/np.sqrt(3)).as_matrix().T
+    c_r.append(r)
+    r=R.from_rotvec(np.pi       * np.array([0,1,1])/np.sqrt(2)).as_matrix().T
+    c_r.append(r)
+    r=R.from_rotvec(2*np.pi/3.  * np.array([-1,-1,-1])/np.sqrt(3)).as_matrix().T
+    c_r.append(r)
+#
+    r=R.from_rotvec(0.*np.pi/2.  * np.array([-1,-1,-1])/np.sqrt(3)).as_matrix().T
     c_r.append(r)
 #
     return c_r
