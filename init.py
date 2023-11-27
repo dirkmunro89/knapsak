@@ -18,7 +18,7 @@ class Object():
 #
 #   init part data structures
 #
-def init(i,fln,c_e,log):
+def init(i,fln,c_e,c_s,log):
 #
     if 1 == 1:
 #
@@ -122,8 +122,19 @@ def init(i,fln,c_e,log):
         flt.SetInputData(obj.vtp)
         flt.SetTransform(tfm_0)
         flt.Update()
-#
         obj.vtp=flt.GetOutput()
+#
+#       and scale it by c_s
+#
+        tfm_0=vtk.vtkTransform()
+        tfm_0.Scale(c_s, c_s, c_s)
+        tfm_0.Update()
+        flt=vtk.vtkTransformPolyDataFilter()
+        flt.SetInputData(obj.vtp)
+        flt.SetTransform(tfm_0)
+        flt.Update()
+        obj.vtp=flt.GetOutput()
+#
         obj.stp=woutstr(obj.vtp)
 #
 #       get axis aligned bounds and bounding box volume

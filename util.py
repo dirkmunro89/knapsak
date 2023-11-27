@@ -3,7 +3,7 @@ import vtk
 import numpy as np
 from scipy.spatial.transform import Rotation as R
 #
-def tfmx(x,i,c_l,c_a,c_r,c_s,tfm,int_flg,rev_flg):
+def tfmx(x,i,c_l,c_a,c_r,tfm,int_flg,rev_flg):
 #
     ret_flg=0
     if tfm is None:
@@ -39,11 +39,11 @@ def tfmx(x,i,c_l,c_a,c_r,c_s,tfm,int_flg,rev_flg):
         tmp=max(np.linalg.norm(r),1e-9)
         if rev_flg:
             tfm.Translate(-c_l[0]*x[c*4+1], -c_l[1]*x[c*4+2], -c_l[2]*x[c*4+3])
-            tfm.Scale(1./c_s[0],1./c_s[1],1./c_s[2])
+#           tfm.Scale(1./c_s,1./c_s,1./c_s)
             tfm.RotateWXYZ(-np.rad2deg(tmp),r[0]/tmp,r[1]/tmp,r[2]/tmp)
         else:
             tfm.RotateWXYZ(np.rad2deg(tmp),r[0]/tmp,r[1]/tmp,r[2]/tmp)
-            tfm.Scale(c_s[0],c_s[1],c_s[2])
+#           tfm.Scale(c_s,c_s,c_s)
             tfm.Translate(c_l[0]*x[c*4+1], c_l[1]*x[c*4+2], c_l[2]*x[c*4+3])
 #
     elif int_flg == 2:
@@ -83,11 +83,11 @@ def tfmx(x,i,c_l,c_a,c_r,c_s,tfm,int_flg,rev_flg):
 #
         if rev_flg:
             tfm.Translate(-c_l[0]*x[c*7+4], -c_l[1]*x[c*7+5], -c_l[2]*x[c*7+6])
-            tfm.Scale(1./c_s[0],1./c_s[1],1./c_s[2])
+#           tfm.Scale(1./c_s,1./c_s,1./c_s)
             tfm.RotateWXYZ(-c_a*x[c*7], x[c*7+1], x[c*7+2], x[c*7+3])
         else:
             tfm.RotateWXYZ(c_a*x[c*7], x[c*7+1], x[c*7+2], x[c*7+3])
-            tfm.Scale(c_s[0],c_s[1],c_s[2])
+#           tfm.Scale(c_s,c_s,c_s)
             tfm.Translate(c_l[0]*x[c*7+4], c_l[1]*x[c*7+5], c_l[2]*x[c*7+6])
 #
     tfm.Update()
@@ -95,7 +95,7 @@ def tfmx(x,i,c_l,c_a,c_r,c_s,tfm,int_flg,rev_flg):
     if ret_flg:
         return tfm
 #
-def appdata(x,n,nums,maps,vtis,c_l,c_a,c_r,c_s,int_flg,str_flg,col_flg):
+def appdata(x,n,nums,maps,vtis,c_l,c_a,c_r,int_flg,str_flg,col_flg):
 #
     t = np.linspace(-510, 510, n)                                              
     rgbs=np.round(np.clip(np.stack([-t, 510-np.abs(t), t], axis=1), 0, 255)).astype(np.uint8)
@@ -118,7 +118,7 @@ def appdata(x,n,nums,maps,vtis,c_l,c_a,c_r,c_s,int_flg,str_flg,col_flg):
 #
 #           tfm=vtk.vtkTransform()
 #           tfm.PostMultiply()
-            tfm=tfmx(x,c,c_l,c_a,c_r,c_s,None,int_flg,0)
+            tfm=tfmx(x,c,c_l,c_a,c_r,None,int_flg,0)
 #
 #           if int_flg:
 #

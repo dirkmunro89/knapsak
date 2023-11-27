@@ -23,8 +23,7 @@ if __name__ == "__main__":
 #   parameters
 #
     c_l=np.array([200.,200.,200.]) # for in box
-    c_s=np.array([1.01,1.01,1.01])
-    c_s1=np.array([1.,1.,1.]) 
+    c_s=1.01
     c_a=180
     c_e=1000
 #
@@ -88,7 +87,7 @@ if __name__ == "__main__":
 #
 #       make the object from the input file
 #
-        obj=init(i,flns[i],c_e,log)
+        obj=init(i,flns[i],c_e,c_s,log)
 #
 #       append to a list of the unique objects in the build
 #
@@ -182,11 +181,11 @@ if __name__ == "__main__":
             outs_0.append(tmp)
 #
     if 'sox' in opt_str:
-        app=appdata(opt_1_x,n,nums,maps,vtps_0,c_l,c_a,c_r,c_s1,2,0,1)
+        app=appdata(opt_1_x,n,nums,maps,vtps_0,c_l,c_a,c_r,2,0,1)
     elif 'six' in opt_str:
-        app=appdata(opt_0_x,n,nums,maps,vtps_0,c_l,c_a,c_r,c_s1,1,0,1)
+        app=appdata(opt_0_x,n,nums,maps,vtps_0,c_l,c_a,c_r,1,0,1)
     else:
-        app=appdata(opt_1_x,n,nums,maps,vtps_0,c_l,c_a,c_r,c_s1,0,0,1)
+        app=appdata(opt_1_x,n,nums,maps,vtps_0,c_l,c_a,c_r,0,0,1)
 #
     if vis_flg:
         vis=rndr(app)
@@ -197,8 +196,8 @@ if __name__ == "__main__":
 #
 #       dual annealing full collisions (based on objects) continuous rotations
 #
-        simu_args=(n,cols,tfms,vtps,exts,maps,c_l,c_r,c_a,c_s,c_v_0,0,0)
-        back_args=(n,cols,tfms,vtps,exts,maps,c_l,c_r,c_a,c_s,c_v_0,nums,vtps,vtcs,0,0,log,vis,out)
+        simu_args=(n,cols,tfms,vtps,exts,maps,c_l,c_r,c_a,c_v_0,0,0)
+        back_args=(n,cols,tfms,vtps,exts,maps,c_l,c_r,c_a,c_v_0,nums,vtps,vtcs,0,0,log,vis,out)
         res=dual_annealing(simu_obp_co,args=simu_args,bounds=opt_1_bds,seed=0,maxiter=int(1e6),\
             callback=partial(back_da_co,args=back_args),no_local_search=True,maxfun=int(1e6))
 #
@@ -206,8 +205,8 @@ if __name__ == "__main__":
 #
 #       dual annealing full collisions (based on objects) 6 rotations
 #
-        simu_args=(n,cols,tfms,vtps,exts,maps,c_l,c_r,c_a,c_s,c_v_0,1,0)
-        back_args=(n,cols,tfms,vtps,exts,maps,c_l,c_r,c_a,c_s,c_v_0,nums,vtps,vtcs,1,0,log,vis,out)
+        simu_args=(n,cols,tfms,vtps,exts,maps,c_l,c_r,c_a,c_v_0,1,0)
+        back_args=(n,cols,tfms,vtps,exts,maps,c_l,c_r,c_a,c_v_0,nums,vtps,vtcs,1,0,log,vis,out)
         res=dual_annealing(simu_obp_co,args=simu_args,bounds=opt_0_bds,seed=0,maxiter=int(1e6),\
             callback=partial(back_da_co,args=back_args),no_local_search=True,maxfun=int(1e6))
 #
@@ -251,15 +250,15 @@ if __name__ == "__main__":
     for i in range(n):
 # 
         if 'sox' in opt_str:
-            tfm=tfmx(res.x,i,c_l,c_a,c_r,c_s1,None,2,0)
+            tfm=tfmx(res.x,i,c_l,c_a,c_r,None,2,0)
             tmp=tran(vtps_0[maps[i]],tfm)
             woutfle(out,tmp,'build',-i-1)
         elif 'six' in opt_str:
-            tfm=tfmx(res.x,i,c_l,c_a,c_r,c_s1,None,1,0)
+            tfm=tfmx(res.x,i,c_l,c_a,c_r,None,1,0)
             tmp=tran(vtps_0[maps[i]],tfm)
             woutfle(out,tmp,'build',-i-1)
         else:
-            tfm=tfmx(res.x,i,c_l,c_a,c_r,c_s1,None,0,0)
+            tfm=tfmx(res.x,i,c_l,c_a,c_r,None,0,0)
             tmp=tran(vtps_0[maps[i]],tfm)
             woutfle(out,tmp,'build',-i-1)
 #
@@ -268,25 +267,25 @@ if __name__ == "__main__":
         outs_0[i].extend(tmp)
 #
     if 'sox' in opt_str:
-        app=appdata(res.x,n,nums,maps,vtps_0,c_l,c_a,c_r,c_s1,2,0,1)
+        app=appdata(res.x,n,nums,maps,vtps_0,c_l,c_a,c_r,2,0,1)
         woutfle(out,app.GetOutput(),'build',0)
-        app=appdata(res.x,n,nums,maps,vtps,c_l,c_a,c_r,c_s1,2,0,1)
+        app=appdata(res.x,n,nums,maps,vtps,c_l,c_a,c_r,2,0,1)
         woutfle(out,app.GetOutput(),'objec',0)
-        app=appdata(res.x,n,nums,maps,vtcs,c_l,c_a,c_r,c_s1,2,0,1)
+        app=appdata(res.x,n,nums,maps,vtcs,c_l,c_a,c_r,2,0,1)
         woutfle(out,app.GetOutput(),'cubes',0)
     elif 'six' in opt_str:
-        app=appdata(res.x,n,nums,maps,vtps_0,c_l,c_a,c_r,c_s1,1,0,1)
+        app=appdata(res.x,n,nums,maps,vtps_0,c_l,c_a,c_r,1,0,1)
         woutfle(out,app.GetOutput(),'build',0)
-        app=appdata(res.x,n,nums,maps,vtps,c_l,c_a,c_r,c_s1,1,0,1)
+        app=appdata(res.x,n,nums,maps,vtps,c_l,c_a,c_r,1,0,1)
         woutfle(out,app.GetOutput(),'objec',0)
-        app=appdata(res.x,n,nums,maps,vtcs,c_l,c_a,c_r,c_s1,1,0,1)
+        app=appdata(res.x,n,nums,maps,vtcs,c_l,c_a,c_r,1,0,1)
         woutfle(out,app.GetOutput(),'cubes',0)
     else:
-        app=appdata(res.x,n,nums,maps,vtps_0,c_l,c_a,c_r,c_s1,0,0,1)
+        app=appdata(res.x,n,nums,maps,vtps_0,c_l,c_a,c_r,0,0,1)
         woutfle(out,app.GetOutput(),'build',0)
-        app=appdata(res.x,n,nums,maps,vtps,c_l,c_a,c_r,c_s1,0,0,1)
+        app=appdata(res.x,n,nums,maps,vtps,c_l,c_a,c_r,0,0,1)
         woutfle(out,app.GetOutput(),'objec',0)
-        app=appdata(res.x,n,nums,maps,vtcs,c_l,c_a,c_r,c_s1,0,0,1)
+        app=appdata(res.x,n,nums,maps,vtcs,c_l,c_a,c_r,0,0,1)
         woutfle(out,app.GetOutput(),'cubes',0)
 #
     with open(out+'transforms.dat', 'w') as file:

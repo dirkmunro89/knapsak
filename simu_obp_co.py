@@ -11,10 +11,9 @@ from util import tfmx, tran, appdata, woutfle
 #
 def back_da_co(xk,fk,context,args):
 #
-    [n,cols,tfms,vtps,exts,maps,c_l,c_r,c_a,c_s,c_v,nums,vtps,vtcs,int_flg,str_flg,log,vis,out]=args
+    [n,cols,tfms,vtps,exts,maps,c_l,c_r,c_a,c_v,nums,vtps,vtcs,int_flg,str_flg,log,vis,out]=args
 #
-    [f,c]=simu_obp_co(xk,n,cols,tfms,vtps,exts,maps,c_l,c_r,c_a,c_s,c_v,int_flg,1)
-    log.info('%14.3e %14.3e %6d'%(fk,f,c))
+    [f,c]=simu_obp_co(xk,n,cols,tfms,vtps,exts,maps,c_l,c_r,c_a,c_v,int_flg,1)
 #
     k=1
     for file in os.listdir(out):
@@ -22,9 +21,11 @@ def back_da_co(xk,fk,context,args):
         if 'cubis_' in filename and filename.endswith(".vtp"):
             k=k+1
 #
-    app=appdata(xk,n,nums,maps,vtcs,c_l,c_a,c_r,np.ones(3),int_flg,str_flg,1)
+    log.info('%6d %14.3e %14.3e %6d'%(k,fk,f,c))
+#
+    app=appdata(xk,n,nums,maps,vtcs,c_l,c_a,c_r,int_flg,str_flg,1)
     woutfle(out,app.GetOutput(),'cubis',k)
-    app=appdata(xk,n,nums,maps,vtps,c_l,c_a,c_r,np.ones(3),int_flg,str_flg,1)
+    app=appdata(xk,n,nums,maps,vtps,c_l,c_a,c_r,int_flg,str_flg,1)
     woutfle(out,app.GetOutput(),'objec',k)
 #
     if vis:
@@ -48,7 +49,7 @@ def back_da_co(xk,fk,context,args):
 #
     return False
 #
-def simu_obp_co(xk,n,cols,tfms,vtps,exts,maps,c_l,c_r,c_a,c_s,c_v,int_flg,flg):
+def simu_obp_co(xk,n,cols,tfms,vtps,exts,maps,c_l,c_r,c_a,c_v,int_flg,flg):
 #
     bnds=[]
     cens=[]
@@ -58,7 +59,7 @@ def simu_obp_co(xk,n,cols,tfms,vtps,exts,maps,c_l,c_r,c_a,c_s,c_v,int_flg,flg):
 #
     for i in range(n):
 #
-        tfmx(xk,i,c_l,c_a,c_r,c_s,tfms[i],int_flg,0)
+        tfmx(xk,i,c_l,c_a,c_r,tfms[i],int_flg,0)
         vtp=tran(vtps[maps[i]],tfms[i]) # can maybe get this from col object
 #
         flt=vtk.vtkCenterOfMass()
@@ -85,22 +86,26 @@ def simu_obp_co(xk,n,cols,tfms,vtps,exts,maps,c_l,c_r,c_a,c_s,c_v,int_flg,flg):
 #
 #   get collisions
 #
-    c=0
+    c1=0
+    c2=0
+    c3=0
     k=0
     for i in range(n-1):
         for j in range(i+1,n):
-            cols[k].Update()
-            c=c+cols[k].GetNumberOfContacts()
-            if np.linalg.norm(cens[i]-cens[j]) < np.amax(c_s)*(exts[maps[i]]+exts[maps[j]]):
-                c=c+encs[i].IsInsideSurface(cens[j])
-                c=c+encs[j].IsInsideSurface(cens[i])
+            if np.linalg.norm(cens[i]-cens[j])<exts[maps[i]]+exts[maps[j]]+1.:
+                cols[k].Update()
+                c1=c1+cols[k].GetNumberOfContacts()
+                c2=c2+encs[i].IsInsideSurface(cens[j])
+                c3=c3+encs[j].IsInsideSurface(cens[i])
             k=k+1
+#   
+    c=c1+c2+c3
 #
 #   revert
 #
     for i in range(n):
 #
-        tfmx(xk,i,c_l,c_a,c_r,c_s,tfms[i],int_flg,1)
+        tfmx(xk,i,c_l,c_a,c_r,tfms[i],int_flg,1)
 #
     f=(bds[1]-bds[0])*(bds[3]-bds[2])*(bds[5]-bds[4])/c_v
 #
