@@ -160,7 +160,7 @@ if __name__ == "__main__":
     opt_1_bds=tuple(opt_1_bds)
 #
     if 'obj' in opt_str:
-        log.info('%6s%14s%14s%16s'%('k','F_0','F_0','collisions'))
+        log.info('%6s%15s%15s%16s'%('k','F_0 (opt)','F_0 (sim)','collisions'))
     else:
         log.info('%14s%16s'%('F_0','collisions'))
     log.info('-'*60)
