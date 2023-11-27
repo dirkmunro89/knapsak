@@ -27,26 +27,34 @@ python main.py opt_str vis_flg n1 mesh1.stl n2 mesh2.stl ...
 _opt_str_ specifies the variant of the problem, and may take the following values:
 - _boxsix_ : axis-aligned bounding box collisions with 6 rotations
 - _soxsix_ : axis-aligned bounding box collisions with 6 rotations and scaling along each coordinate axis
-- _objsix_ : STL mesh collisions with 6 rotations
-- _objall_ : STL mesh collisions with free rotations
+- _objsix_ : decimated STL mesh collisions with 6 rotations
+- _objall_ : decimated STL mesh collisions with all rotations
 
 _vis_flg_ : switches on (1) or off (0) rendering the latest minimum during the optimization process.
 
 Note:
-- Currently a decimation procedure, which reduces the number of triangles in each mesh to 1000, is applied internally.
+- A decimation procedure, which reduces the number of triangles in each mesh to 1000, is applied internally.
 - Meshes are increased in size by 1\% in the STL-mesh-based collision detection.   
-- The simulated (dual) annealing algorithm is set to terminate after (a fairly modest) 1 million evaluations.
 
 ## Examples
 
 <p align="center" style="text-align: center; font-weight: bold;">
-<img src="img/objects.png"/>
+<img width=400 src="img/objects.png"/>
+</p>
+<p align="center" style="text-align: center; font-weight: bold;">
 Figure 1: Example STL meshes (Armadillo, Stanford Bunny, 3DBenchy, Dragon, and a big cone).
 </p>
 
 ```
 python main.py objall 1 1 stl/Bunny.stl 2 stl/Armadillo.stl 3 stl/3DBenchy.stl 4 stl/Dragon.stl 1 stl/Cone.stl
 ```
+
+<p align="center" style="text-align: center; font-weight: bold;">
+  <img src="img/packing.gif" alt="animated" />
+</p>
+<p align="center" style="text-align: center; font-weight: bold;">
+  Figure 2: Packing one bunny, two armadillos, three benchy boats, four dragons, and one big cone, with all rotations permitted and collisions detected on decimated STL meshes.
+</p>
 
 To be continued.
 

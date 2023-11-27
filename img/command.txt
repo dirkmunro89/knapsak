@@ -1,0 +1,1 @@
+convert -loop 0 -delay 10 ani_100.000{0..9}.jpeg -delay 10 ani_100.00{10..98}.jpeg -delay 60 ani_100.0099.jpeg packing.gif

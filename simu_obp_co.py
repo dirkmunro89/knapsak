@@ -14,7 +14,7 @@ def back_da_co(xk,fk,context,args):
     [n,cols,tfms,vtps,exts,maps,c_l,c_r,c_a,c_s,c_v,nums,vtps,vtcs,int_flg,str_flg,log,vis,out]=args
 #
     [f,c]=simu_obp_co(xk,n,cols,tfms,vtps,exts,maps,c_l,c_r,c_a,c_s,c_v,int_flg,1)
-    log.info('%14.3e %6d'%(fk,c))
+    log.info('%14.3e %14.3e %6d'%(fk,f,c))
 #
     k=1
     for file in os.listdir(out):
@@ -89,13 +89,11 @@ def simu_obp_co(xk,n,cols,tfms,vtps,exts,maps,c_l,c_r,c_a,c_s,c_v,int_flg,flg):
     k=0
     for i in range(n-1):
         for j in range(i+1,n):
+            cols[k].Update()
+            c=c+cols[k].GetNumberOfContacts()
             if np.linalg.norm(cens[i]-cens[j]) < np.amax(c_s)*(exts[maps[i]]+exts[maps[j]]):
-                tmp_c1=encs[i].IsInsideSurface(cens[j])
-                tmp_c1=tmp_c1+encs[j].IsInsideSurface(cens[i])
-                if tmp_c1==0:
-                    cols[k].Update()
-                    c=c+cols[k].GetNumberOfContacts()
-                c=c+tmp_c1
+                c=c+encs[i].IsInsideSurface(cens[j])
+                c=c+encs[j].IsInsideSurface(cens[i])
             k=k+1
 #
 #   revert
