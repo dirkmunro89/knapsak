@@ -159,7 +159,10 @@ if __name__ == "__main__":
     opt_1_x=np.array([0 for i in range(7*n)])
     opt_1_bds=tuple(opt_1_bds)
 #
-    log.info('%14s%16s'%('F_0','collisions'))
+    if 'obj' in opt_str:
+        log.info('%6s%14s%14s%16s'%('k','F_0','F_0','collisions'))
+    else:
+        log.info('%14s%16s'%('F_0','collisions'))
     log.info('-'*60)
 #
     outs_0=[]
