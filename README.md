@@ -46,18 +46,27 @@ Note:
 Figure 1: Example STL meshes (Armadillo, Stanford Bunny, 3DBenchy, Dragon, and a big cone).
 </p>
 
+#### Example 1
+
+```
+python main.py obj24r 1 1 stl/Bunny.stl 2 stl/Armadillo.stl 3 stl/3DBenchy.stl 4 stl/Dragon.stl 1 stl/Cone.stl
+```
+
+<p align="center" style="text-align: center; font-weight: normal;">
+  <img src="img/obj24r.gif" alt="animated" />
+  <b>Figure 2:</b> Packing one bunny, two armadillos, three benchy boats, four dragons, and one big cone, with 24 rotations permitted and collisions detected on decimated STL meshes.
+</p>
+
+#### Example 2
+
 ```
 python main.py objall 1 1 stl/Bunny.stl 2 stl/Armadillo.stl 3 stl/3DBenchy.stl 4 stl/Dragon.stl 1 stl/Cone.stl
 ```
 
-<p align="center" style="text-align: center; font-weight: bold;">
-  <img src="img/packing.gif" alt="animated" />
+<p align="center" style="text-align: center; font-weight: normal;">
+  <img src="img/objall.gif" alt="animated" />
+<b>Figure 3:</b> Packing one bunny, two armadillos, three benchy boats, four dragons, and one big cone, with all rotations permitted and collisions detected on decimated STL meshes.
 </p>
-<p align="center" style="text-align: center; font-weight: bold;">
-  Figure 2: Packing one bunny, two armadillos, three benchy boats, four dragons, and one big cone, with all rotations permitted and collisions detected on decimated STL meshes.
-</p>
-
-To be continued.
 
 ## References
 <a id="1">[1]</a>
