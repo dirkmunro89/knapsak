@@ -18,7 +18,7 @@ class Object():
 #
 #   init part data structures
 #
-def init(i,fln,c_e,c_s,log):
+def init(i,fln,c_e,c_s,log,deb):
 #
     if 1 == 1:
 #
@@ -98,7 +98,7 @@ def init(i,fln,c_e,c_s,log):
 #
         obj.cen=flt.GetCenter()
 #
-        if 1 == 0:
+        if deb == 1:
             tmp=obj.vtp.GetBounds()
             obj.cen= np.array([tmp[1]-tmp[0],tmp[3]-tmp[2],tmp[5]-tmp[4]])/2.
 #

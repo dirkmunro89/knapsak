@@ -13,7 +13,7 @@ from scipy.optimize import minimize, dual_annealing
 from rndr import rndr
 #
 from init import init
-from init import pretfms12 as pretfms
+from init import pretfms24, pretfms6
 from simu_obp import simu_obp, back_da
 from simu_obp_co import simu_obp_co, back_da_co
 #
@@ -60,7 +60,7 @@ if __name__ == "__main__":
     log.info('Writing output to:\n%s'%out)
     log.info('='*60)
 #
-    sys.argv=['prerot.py', 'objsix', '0', '7', 'stl/Plate.stl']
+    sys.argv=['prerot.py', 'obj24r', '0', '24', 'stl/Dice.stl']
 #
     opt_str=sys.argv[1]
     vis_flg=int(sys.argv[2])
@@ -90,7 +90,7 @@ if __name__ == "__main__":
 #
 #       make the object from the input file
 #
-        obj=init(i,flns[i],c_e,c_s,log)
+        obj=init(i,flns[i],c_e,c_s,log,1)
 #
 #       append to a list of the unique objects in the build
 #
@@ -148,7 +148,12 @@ if __name__ == "__main__":
 #
 #   set up predefined transforms
 #
-    c_r=pretfms()
+    if '24r' in opt_str:
+        c_r=pretfms24()
+    elif 'six' in opt_str:
+        c_r=pretfms6()
+    else:
+        c_r=[]
 #
 #   set bounds and integer variables
 #
@@ -190,6 +195,8 @@ if __name__ == "__main__":
         app=appdata(opt_1_x,n,nums,maps,vtps_0,c_l,c_a,c_r,2,0,1)
     elif 'six' in opt_str:
         app=appdata(opt_0_x,n,nums,maps,vtps_0,c_l,c_a,c_r,1,0,1)
+    elif '24r' in opt_str:
+        app=appdata(opt_0_x,n,nums,maps,vtps_0,c_l,c_a,c_r,24,0,1)
     else:
         app=appdata(opt_1_x,n,nums,maps,vtps_0,c_l,c_a,c_r,0,0,1)
 #
@@ -199,13 +206,31 @@ if __name__ == "__main__":
         vis=None
 #
     xk=np.zeros(4*n)
-    xk[4*0]=-3/3.
-    xk[4*1]=-2/3.
-    xk[4*2]=-1/3.
-    xk[4*3]=0/3.
-    xk[4*4]=1/3.
-    xk[4*5]=2/3.
-    xk[4*6]=3/3.
+    xk[4*0]=-12/12.
+    xk[4*1]=-11/12.
+    xk[4*2]=-10/12.
+    xk[4*3]=-9/12.
+    xk[4*4]=-8/12.
+    xk[4*5]=-7/12.
+    xk[4*6]=-6/12.
+    xk[4*7]=-5/12.
+    xk[4*8]=-4/12.
+    xk[4*9]=-3/12.
+    xk[4*10]=-2/12.
+    xk[4*11]=-1/12.
+    xk[4*12]=0/12.
+    xk[4*13]=1/12.
+    xk[4*14]=2/12.
+    xk[4*15]=3/12.
+    xk[4*16]=4/12.
+    xk[4*17]=5/12.
+    xk[4*18]=6/12.
+    xk[4*19]=7/12.
+    xk[4*20]=8/12.
+    xk[4*21]=9/12.
+    xk[4*22]=10/12.
+    xk[4*23]=11/12.
+#   xk[4*24]=12/12.
 #
     for i in range(n):
 # 
@@ -215,6 +240,10 @@ if __name__ == "__main__":
             woutfle(out,tmp,'build',-i-1)
         elif 'six' in opt_str:
             tfm=tfmx(xk,i,c_l,c_a,c_r,None,1,0)
+            tmp=tran(vtps_0[maps[i]],tfm)
+            woutfle("./",tmp,'build',-i-1)
+        elif '24r' in opt_str:
+            tfm=tfmx(xk,i,c_l,c_a,c_r,None,24,0)
             tmp=tran(vtps_0[maps[i]],tfm)
             woutfle("./",tmp,'build',-i-1)
         else:
@@ -240,6 +269,13 @@ if __name__ == "__main__":
         woutfle(out,app.GetOutput(),'objec',0)
         app=appdata(xk,n,nums,maps,vtcs,c_l,c_a,c_r,1,0,1)
         woutfle(out,app.GetOutput(),'cubes',0)
+    elif '24r' in opt_str:
+        app=appdata(xk,n,nums,maps,vtps_0,c_l,c_a,c_r,24,0,1)
+        woutfle("./",app.GetOutput(),'build',0)
+        app=appdata(xk,n,nums,maps,vtps,c_l,c_a,c_r,24,0,1)
+        woutfle("./",app.GetOutput(),'objec',0)
+        app=appdata(xk,n,nums,maps,vtcs,c_l,c_a,c_r,24,0,1)
+        woutfle("./",app.GetOutput(),'cubes',0)
     else:
         app=appdata(xk,n,nums,maps,vtps_0,c_l,c_a,c_r,0,0,1)
         woutfle(out,app.GetOutput(),'build',0)

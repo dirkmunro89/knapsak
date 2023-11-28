@@ -87,7 +87,7 @@ if __name__ == "__main__":
 #
 #       make the object from the input file
 #
-        obj=init(i,flns[i],c_e,c_s,log)
+        obj=init(i,flns[i],c_e,c_s,log,0)
 #
 #       append to a list of the unique objects in the build
 #
