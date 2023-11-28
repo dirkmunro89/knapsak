@@ -101,20 +101,13 @@ def tfmx(x,i,c_l,c_a,c_r,tfm,int_flg,rev_flg):
     else:
 #
         if rev_flg:
-            tfm.Translate(-c_l[0]*x[c*6+3], -c_l[1]*x[c*6+4], -c_l[2]*x[c*6+5])
+            tfm.Translate(-c_l[0]*x[c*7+4], -c_l[1]*x[c*7+5], -c_l[2]*x[c*7+6])
 #           tfm.Scale(1./c_s,1./c_s,1./c_s)
-            tmp=x[c*6:c*6+3]
-            nrm=np.linalg.norm(tmp)
-            tmp=tmp/max(nrm,1e-9)
-            tfm.RotateWXYZ(-np.rad2deg(c_a*nrm), tmp[0], tmp[1], tmp[2])
+            tfm.RotateWXYZ(-np.rad2deg(c_a*x[c*7]), x[c*7+1], x[c*7+2], x[c*7+3])
         else:
-            tmp=x[c*6:c*6+3]
-            nrm=np.linalg.norm(tmp)
-            tmp=tmp/max(nrm,1e-9)
-            tfm.RotateWXYZ(np.rad2deg(c_a*nrm), tmp[0], tmp[1], tmp[2])
-#           tfm.RotateWXYZ(c_a*x[c*6], x[c*6+1], x[c*6+2], x[c*6+3])
+            tfm.RotateWXYZ(np.rad2deg(c_a*x[c*7]), x[c*7+1], x[c*7+2], x[c*7+3])
 #           tfm.Scale(c_s,c_s,c_s)
-            tfm.Translate(c_l[0]*x[c*6+3], c_l[1]*x[c*6+4], c_l[2]*x[c*6+5])
+            tfm.Translate(c_l[0]*x[c*7+4], c_l[1]*x[c*7+5], c_l[2]*x[c*7+6])
 #
     tfm.Update()
 #

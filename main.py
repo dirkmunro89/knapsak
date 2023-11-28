@@ -24,7 +24,7 @@ if __name__ == "__main__":
 #
     c_l=np.array([200.,200.,200.]) # for in box
     c_s=1.01
-    c_a=np.pi/np.sqrt(3) # normalised to max magnitude of rotation vector (1,1,1)
+    c_a=np.pi # normalised to max magnitude of rotation vector (1,1,1)
     c_e=1000
 #
 #   get input arguments 
@@ -163,9 +163,6 @@ if __name__ == "__main__":
     opt_1_bds=[(-1.,1.) for i in range(7*n)]; 
     opt_1_x=np.array([0 for i in range(7*n)])
     opt_1_bds=tuple(opt_1_bds)
-    opt_11_bds=[(-1.,1.) for i in range(6*n)]; 
-    opt_11_x=np.array([0 for i in range(6*n)])
-    opt_11_bds=tuple(opt_1_bds)
 #
     log.info('%6s%15s%15s%16s'%('k','F_0 (opt)','F_0 (sim)','collisions'))
     log.info('-'*60)
@@ -195,7 +192,7 @@ if __name__ == "__main__":
     elif '24r' in opt_str:
         app=appdata(opt_0_x,n,nums,maps,vtps_0,c_l,c_a,c_r,24,0,1)
     else:
-        app=appdata(opt_11_x,n,nums,maps,vtps_0,c_l,c_a,c_r,0,0,1)
+        app=appdata(opt_1_x,n,nums,maps,vtps_0,c_l,c_a,c_r,0,0,1)
 #
     if vis_flg:
         vis=rndr(app)
@@ -208,7 +205,7 @@ if __name__ == "__main__":
 #
         simu_args=(n,cols,tfms,vtps,exts,maps,c_l,c_r,c_a,c_v_0,0,0)
         back_args=(n,cols,tfms,vtps,exts,maps,c_l,c_r,c_a,c_v_0,nums,vtps,vtcs,0,0,log,vis,out)
-        res=dual_annealing(simu_obp_co,args=simu_args,bounds=opt_11_bds,seed=0,maxiter=int(1e6),\
+        res=dual_annealing(simu_obp_co,args=simu_args,bounds=opt_1_bds,seed=0,maxiter=int(1e6),\
             callback=partial(back_da_co,args=back_args),no_local_search=True,maxfun=int(1e6))
 #
     elif opt_str == 'obj24r':
