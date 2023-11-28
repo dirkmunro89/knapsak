@@ -100,12 +100,16 @@ def tfmx(x,i,c_l,c_a,c_r,tfm,int_flg,rev_flg):
 #    
     else:
 #
+#       checked: it is normalised internally anyway; good to show it here
+#
         if rev_flg:
             tfm.Translate(-c_l[0]*x[c*7+4], -c_l[1]*x[c*7+5], -c_l[2]*x[c*7+6])
 #           tfm.Scale(1./c_s,1./c_s,1./c_s)
-            tfm.RotateWXYZ(-np.rad2deg(c_a*x[c*7]), x[c*7+1], x[c*7+2], x[c*7+3])
+            tmp=max(np.linalg.norm(x[c*7+1:c*7+4]),1e-12)
+            tfm.RotateWXYZ(-np.rad2deg(c_a*x[c*7]), x[c*7+1]/tmp, x[c*7+2]/tmp, x[c*7+3]/tmp)
         else:
-            tfm.RotateWXYZ(np.rad2deg(c_a*x[c*7]), x[c*7+1], x[c*7+2], x[c*7+3])
+            tmp=max(np.linalg.norm(x[c*7+1:c*7+4]),1e-12)
+            tfm.RotateWXYZ(np.rad2deg(c_a*x[c*7]), x[c*7+1]/tmp, x[c*7+2]/tmp, x[c*7+3]/tmp)
 #           tfm.Scale(c_s,c_s,c_s)
             tfm.Translate(c_l[0]*x[c*7+4], c_l[1]*x[c*7+5], c_l[2]*x[c*7+6])
 #
