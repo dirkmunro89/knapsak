@@ -207,7 +207,7 @@ if __name__ == "__main__":
         simu_args=(n,cols,tfms,vtps,exts,maps,c_l,c_r,c_a,c_v_0,0,0)
         back_args=(n,cols,tfms,vtps,exts,maps,c_l,c_r,c_a,c_v_0,nums,vtps,vtcs,0,0,log,vis,out)
         res=dual_annealing(simu_obp_co,args=simu_args,bounds=opt_1_bds,seed=0,maxiter=int(1e6),\
-            callback=partial(back_da_co,args=back_args),no_local_search=True,maxfun=int(1e6/10))
+            callback=partial(back_da_co,args=back_args),no_local_search=True,maxfun=int(1e6))
 #
     elif opt_str == 'obj24r':
 #
