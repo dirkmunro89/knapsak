@@ -105,11 +105,11 @@ def tfmx(x,i,c_l,c_a,c_r,tfm,int_flg,rev_flg):
         if rev_flg:
             tfm.Translate(-c_l[0]*x[c*7+4], -c_l[1]*x[c*7+5], -c_l[2]*x[c*7+6])
 #           tfm.Scale(1./c_s,1./c_s,1./c_s)
-            tmp=max(np.linalg.norm(x[c*7+1:c*7+4]),1e-12)
-            tfm.RotateWXYZ(-np.rad2deg(c_a*x[c*7]), x[c*7+1]/tmp, x[c*7+2]/tmp, x[c*7+3]/tmp)
+            tmp=x[c*7+1:c*7+4]#/np.linalg.norm(x[c*7+1:c*7+4])
+            tfm.RotateWXYZ(np.rad2deg(-c_a*x[c*7]), tmp[0], tmp[1], tmp[2])
         else:
-            tmp=max(np.linalg.norm(x[c*7+1:c*7+4]),1e-12)
-            tfm.RotateWXYZ(np.rad2deg(c_a*x[c*7]), x[c*7+1]/tmp, x[c*7+2]/tmp, x[c*7+3]/tmp)
+            tmp=x[c*7+1:c*7+4]#/np.linalg.norm(x[c*7+1:c*7+4])
+            tfm.RotateWXYZ(np.rad2deg(c_a*x[c*7]), tmp[0], tmp[1], tmp[2])
 #           tfm.Scale(c_s,c_s,c_s)
             tfm.Translate(c_l[0]*x[c*7+4], c_l[1]*x[c*7+5], c_l[2]*x[c*7+6])
 #
@@ -207,7 +207,7 @@ def tran(vtp,tfm):
     tfm_flt.SetInputData(vtp)
     tfm_flt.SetTransform(tfm)
     tfm_flt.Update()
-    tmp = tfm_flt.GetOutput()
+    tmp=tfm_flt.GetOutput()
 #
     return tmp
 #

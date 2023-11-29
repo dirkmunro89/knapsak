@@ -25,7 +25,7 @@ if __name__ == "__main__":
     c_l=np.array([200.,200.,200.]) # for in box
     c_s=1.01
     c_a=np.pi # normalised to max magnitude of rotation vector (1,1,1)
-    c_e=1000
+    c_e=30
 #
 #   get input arguments 
 #   - number to be stacked and
@@ -127,6 +127,7 @@ if __name__ == "__main__":
 #           col.SetCollisionModeToAllContacts()
 #           col.SetCollisionModeToHalfContacts()
             col.SetCollisionModeToFirstContact()
+            col.SetGenerateScalars(0)
             col.SetInputData(0,objs[maps[i]].vtp)
             col.SetTransform(0,tfms[i])
             col.SetInputData(1,objs[maps[j]].vtp)
@@ -164,7 +165,7 @@ if __name__ == "__main__":
     opt_1_x=np.array([0 for i in range(7*n)])
     opt_1_bds=tuple(opt_1_bds)
 #
-    log.info('%6s%15s%15s%16s'%('k','F_0 (opt)','F_0 (sim)','collisions'))
+    log.info('%6s%15s'%('k','F_0 (opt)'))
     log.info('-'*60)
 #
     outs_0=[]
@@ -206,11 +207,11 @@ if __name__ == "__main__":
         simu_args=(n,cols,tfms,vtps,exts,maps,c_l,c_r,c_a,c_v_0,0,0)
         back_args=(n,cols,tfms,vtps,exts,maps,c_l,c_r,c_a,c_v_0,nums,vtps,vtcs,0,0,log,vis,out)
         res=dual_annealing(simu_obp_co,args=simu_args,bounds=opt_1_bds,seed=0,maxiter=int(1e6),\
-            callback=partial(back_da_co,args=back_args),no_local_search=True,maxfun=int(1e6))
+            callback=partial(back_da_co,args=back_args),no_local_search=True,maxfun=int(1e6/10))
 #
     elif opt_str == 'obj24r':
 #
-#       dual annealing full collisions (based on objects) 6 rotations
+#       dual annealing full collisions (based on objects) 24 rotations
 #
         simu_args=(n,cols,tfms,vtps,exts,maps,c_l,c_r,c_a,c_v_0,24,0)
         back_args=(n,cols,tfms,vtps,exts,maps,c_l,c_r,c_a,c_v_0,nums,vtps,vtcs,24,0,log,vis,out)
