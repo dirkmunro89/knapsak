@@ -59,7 +59,10 @@ def simu_obp_co(xk,n,cols,tfms,vtps,exts,maps,c_l,c_r,c_a,c_v,int_flg,flg):
 #
     for i in range(n):
 #
-        cens.append(c_l*xk[7*i+4:7*i+7])
+        if int_flg == 24:
+            cens.append(c_l*xk[4*i+1:4*i+4])
+        else:
+            cens.append(c_l*xk[7*i+4:7*i+7])
 #
         tfmx(xk,i,c_l,c_a,c_r,tfms[i],int_flg,0)
 #
@@ -87,7 +90,13 @@ def simu_obp_co(xk,n,cols,tfms,vtps,exts,maps,c_l,c_r,c_a,c_v,int_flg,flg):
                 if c==0:
                     ct=ct+encs[i].IsInsideSurface(cens[j])+encs[j].IsInsideSurface(cens[i])
                 ct=ct+c
+                if ct > 0:
+                    break
+            if ct > 0:
+                break
             k=k+1
+        if ct > 0:
+            break
 #   
 #   revert
 #

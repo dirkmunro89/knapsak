@@ -115,7 +115,7 @@ def simu_obp(xk,n,pnts,maps,c_l,c_a,c_r,c_v,int_flg,flg):
             tmp = np.array([xk[7*i+1],xk[7*i+2],xk[7*i+3]])
             tmp = tmp/np.linalg.norm(tmp)
 #           tmp = tmp*c_a*xk[7*i]
-            rot=R.from_rotvec( np.deg2rad(c_a*xk[7*i])*tmp ).as_matrix().T
+            rot=R.from_rotvec( (c_a*xk[7*i])*tmp ).as_matrix().T
             npts_i=np.dot(pts_i,rot)+xk[7*i+4:7*i+7]*c_l
 #
         npts.append(npts_i)
