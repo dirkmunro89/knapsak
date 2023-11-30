@@ -139,7 +139,7 @@ if __name__ == "__main__":
 #
     log.info('='*60)
 #
-    pnts = [obj.pts for obj in objs]
+    cors = [obj.cor for obj in objs]
     stps = [obj.stp for obj in objs]
     vtps = [obj.vtp for obj in objs]
     stcs = [obj.stc for obj in objs]

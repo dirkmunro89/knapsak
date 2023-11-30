@@ -15,6 +15,7 @@ from rndr import rndr
 from init import init, pretfms6, pretfms24
 from simu_obp import simu_obp, back_da
 from simu_obp_co import simu_obp_co, back_da_co
+from simu_obp_pt import simu_obp_pt, back_da_pt
 #
 from util import tfmx, tran, appdata, woutfle
 #
@@ -25,7 +26,7 @@ if __name__ == "__main__":
     c_l=np.array([200.,200.,200.]) # for in box
     c_s=1.01
     c_a=np.pi 
-    c_e=1000
+    c_e=10000
 #
 #   get input arguments 
 #   - number to be stacked and
@@ -137,6 +138,7 @@ if __name__ == "__main__":
 #
     log.info('='*60)
 #
+    cors = [obj.cor for obj in objs]
     pnts = [obj.pts for obj in objs]
     stps = [obj.stp for obj in objs]
     vtps = [obj.vtp for obj in objs]
@@ -200,7 +202,16 @@ if __name__ == "__main__":
     else:
         vis=None
 #
-    if opt_str == 'objall':
+    if opt_str == 'ptsall':
+#
+#       dual annealing full collisions (based on objects) continuous rotations
+#
+        simu_args=(n,pnts,maps,exts,c_l,c_r,c_a,c_v_0,0,0)
+        back_args=(n,pnts,maps,exts,c_l,c_r,c_a,c_v_0,nums,vtps,vtcs,0,0,log,vis,out)
+        res=dual_annealing(simu_obp_pt,args=simu_args,bounds=opt_1_bds,seed=0,maxiter=int(1e6),\
+            callback=partial(back_da_pt,args=back_args),no_local_search=True,maxfun=int(1e6))
+#
+    elif opt_str == 'objall':
 #
 #       dual annealing full collisions (based on objects) continuous rotations
 #
@@ -222,8 +233,8 @@ if __name__ == "__main__":
 #
 #       dual annealing axis aligned bounding box based collisions with 6 rotations
 #
-        simu_args=(n,pnts,maps,c_l,c_a,c_r,c_v_0,1,0)
-        back_args=(n,pnts,maps,c_l,c_a,c_r,c_v_0,nums,vtps,vtcs,1,0,log,vis,out)
+        simu_args=(n,cors,maps,c_l,c_a,c_r,c_v_0,1,0)
+        back_args=(n,cors,maps,c_l,c_a,c_r,c_v_0,nums,vtps,vtcs,1,0,log,vis,out)
         res=dual_annealing(simu_obp,args=simu_args,bounds=opt_0_bds,seed=0,maxiter=int(1e6),\
             callback=partial(back_da,args=back_args),no_local_search=True,maxfun=int(10e6))
 #
@@ -232,8 +243,8 @@ if __name__ == "__main__":
 #       dual annealing axis aligned bounding box based collisions with 6 rotations
 #       and scaling of object
 #
-        simu_args=(n,pnts,maps,c_l,c_a,c_r,c_v_0,2,0)
-        back_args=(n,pnts,maps,c_l,c_a,c_r,c_v_0,nums,vtps,vtcs,2,0,log,vis,out)
+        simu_args=(n,cors,maps,c_l,c_a,c_r,c_v_0,2,0)
+        back_args=(n,cors,maps,c_l,c_a,c_r,c_v_0,nums,vtps,vtcs,2,0,log,vis,out)
         res=dual_annealing(simu_obp,args=simu_args,bounds=opt_1_bds,seed=0,maxiter=int(1e6),\
             callback=partial(back_da,args=back_args),no_local_search=True,maxfun=int(10e6))
 #
@@ -241,8 +252,8 @@ if __name__ == "__main__":
 #
 #       dual annealing axis aligned bounding box based collisions with all rotations
 #
-        simu_args=(n,pnts,maps,c_l,c_a,c_r,c_v_0,0,0)
-        back_args=(n,pnts,maps,c_l,c_a,c_r,c_v_0,nums,vtps,vtcs,0,0,log,vis,out)
+        simu_args=(n,cors,maps,c_l,c_a,c_r,c_v_0,0,0)
+        back_args=(n,cors,maps,c_l,c_a,c_r,c_v_0,nums,vtps,vtcs,0,0,log,vis,out)
         res=dual_annealing(simu_obp,args=simu_args,bounds=opt_1_bds,seed=0,maxiter=int(1e6),\
             callback=partial(back_da,args=back_args),no_local_search=True,maxfun=int(10e6))
 #

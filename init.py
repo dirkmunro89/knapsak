@@ -4,7 +4,7 @@ import numpy as np
 from vtk.util import numpy_support
 from scipy.spatial.transform import Rotation as R
 #
-from util import woutstr
+from util import woutstr, woutfle
 #
 #   Matlab-like struct
 #
@@ -179,9 +179,31 @@ def init(i,fln,c_e,c_s,log,deb):
 #
 #       get bounding box points
 #
-        obj.pts=numpy_support.vtk_to_numpy(obj.vtc.GetPoints().GetData())
+        obj.cor=numpy_support.vtk_to_numpy(obj.vtc.GetPoints().GetData())
 #
         obj.ext=np.amax(np.linalg.norm(numpy_support.vtk_to_numpy(obj.vtp.GetPoints().GetData()),axis=1))
+#
+#       get object points
+
+        obj.pts=numpy_support.vtk_to_numpy(obj.vtp.GetPoints().GetData())
+#
+        flt=vtk.vtkCellSizeFilter()
+        flt.SetInputData(obj.vtp)
+        flt.SetComputeVertexCount(0)
+        flt.SetComputeLength(0)
+        flt.SetComputeVolume(0)
+        flt.Update()
+        tmp=flt.GetOutput()
+        c_d=np.sqrt(np.amax(numpy_support.vtk_to_numpy(tmp.GetCellData().GetArray('Area'))))
+#
+#       flt=vtk.vtkCellCenters()
+#       flt.SetInputData(obj.vtp)
+#       flt.VertexCellsOn()
+#       flt.Update()
+#       tmp=flt.GetOutput()
+#       print(tmp)
+#       woutfle('./',tmp,'see',0)
+#       stop
 #
         return obj
 #
