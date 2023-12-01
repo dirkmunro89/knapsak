@@ -54,6 +54,7 @@ def simu_obp_co(xk,n,cols,tfms,vtps,exts,maps,c_l,c_r,c_a,c_v,int_flg,flg):
     bnds=[]
     cens=[]
     encs=[]
+    vtps_1=[]
 #
 #   apply transforms and compute new total bounding box
 #
@@ -69,10 +70,11 @@ def simu_obp_co(xk,n,cols,tfms,vtps,exts,maps,c_l,c_r,c_a,c_v,int_flg,flg):
         vtp=tran(vtps[maps[i]],tfms[i]) # can maybe get this from col object
         bnds.append(np.array(vtp.GetBounds()))
 #
-        enc=vtk.vtkSelectEnclosedPoints()
-        enc.CheckSurfaceOff()
-        enc.Initialize(vtp)
-        encs.append(enc)
+        vtps_1.append(vtp)
+#       enc=vtk.vtkSelectEnclosedPoints()
+#       enc.CheckSurfaceOff()
+#       enc.Initialize(vtp)
+#       encs.append(enc)
 #          
     tax=np.amax(np.array(bnds),axis=0)
     tin=np.amin(np.array(bnds),axis=0)
@@ -82,13 +84,18 @@ def simu_obp_co(xk,n,cols,tfms,vtps,exts,maps,c_l,c_r,c_a,c_v,int_flg,flg):
 #
     ct=0
     k=0
+    enc_lst=[]
+    enc_prs=[]
     for i in range(n-1):
         for j in range(i+1,n):
             if np.linalg.norm(cens[i]-cens[j])<1.1*(exts[maps[i]]+exts[maps[j]]):
                 cols[k].Update()
                 c=cols[k].GetNumberOfContacts()
                 if c==0:
-                    ct=ct+encs[i].IsInsideSurface(cens[j])+encs[j].IsInsideSurface(cens[i])
+                    enc_lst.append(i)
+                    enc_lst.append(j)
+                    enc_prs.append((i,j))
+#                   ct=ct+encs[i].IsInsideSurface(cens[j])+encs[j].IsInsideSurface(cens[i])
                 ct=ct+c
                 if ct > 0:
                     break
@@ -97,6 +104,25 @@ def simu_obp_co(xk,n,cols,tfms,vtps,exts,maps,c_l,c_r,c_a,c_v,int_flg,flg):
             k=k+1
         if ct > 0:
             break
+#
+    if ct==0:
+        encs={}
+        if len(enc_lst)>0:
+            enc_lst=list(set(enc_lst))
+            for e in enc_lst:
+                enc=vtk.vtkSelectEnclosedPoints()
+                enc.CheckSurfaceOff()
+                enc.Initialize(vtps_1[e])
+                encs[e]=enc
+            for p in enc_prs:
+                c1=encs[p[0]].IsInsideSurface(cens[p[1]])
+                if c1:
+                    ct=c1
+                    break
+                c2=encs[p[1]].IsInsideSurface(cens[p[0]])
+                if c2:
+                    ct=c2
+                    break
 #   
 #   revert
 #
@@ -104,7 +130,7 @@ def simu_obp_co(xk,n,cols,tfms,vtps,exts,maps,c_l,c_r,c_a,c_v,int_flg,flg):
 #
         tfmx(xk,i,c_l,c_a,c_r,tfms[i],int_flg,1)
 #
-    f=(bds[1]-bds[0])*(bds[3]-bds[2])*(bds[5]-bds[4])/c_v+ct
+    f=(bds[1]-bds[0])*(bds[3]-bds[2])*(bds[5]-bds[4])/c_v+ct*1e1
 #
     return f
 #

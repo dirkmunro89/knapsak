@@ -158,7 +158,7 @@ def simu_obp(xk,n,pnts,maps,c_l,c_a,c_r,c_v,int_flg,flg):
     else:
         f=(bds[1]-bds[0])*(bds[3]-bds[2])*(bds[5]-bds[4])/c_v
 #
-    f=f+c
+    f=f+c*1e1
 #
     if flg == 0:
         return f
