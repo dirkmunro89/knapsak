@@ -16,6 +16,7 @@ from init import init, pretfms6, pretfms24
 from simu_obp import simu_obp, back_da
 from simu_obp_co import simu_obp_co, back_da_co
 from simu_obp_pt import simu_obp_pt, back_da_pt
+from simu_obp_dt import simu_obp_dt, back_da_dt
 #
 from util import tfmx, tran, appdata, woutfle
 #
@@ -26,7 +27,7 @@ if __name__ == "__main__":
     c_l=np.array([200.,200.,200.]) # for in box
     c_s=1.01
     c_a=np.pi 
-    c_e=10000
+    c_e=1000
 #
 #   get input arguments 
 #   - number to be stacked and
@@ -145,6 +146,8 @@ if __name__ == "__main__":
     stcs = [obj.stc for obj in objs]
     vtcs = [obj.vtc for obj in objs]
     exts = [obj.ext for obj in objs]
+    nrm_vecs = [obj.nrm_vec for obj in objs]
+    nrm_pnts = [obj.nrm_pnt for obj in objs]
 #
 #   set up predefined transforms
 #
@@ -206,10 +209,14 @@ if __name__ == "__main__":
 #
 #       dual annealing full collisions (based on objects) continuous rotations
 #
-        simu_args=(n,pnts,maps,exts,c_l,c_r,c_a,c_v_0,0,0)
-        back_args=(n,pnts,maps,exts,c_l,c_r,c_a,c_v_0,nums,vtps,vtcs,0,0,log,vis,out)
-        res=dual_annealing(simu_obp_pt,args=simu_args,bounds=opt_1_bds,seed=0,maxiter=int(1e6),\
-            callback=partial(back_da_pt,args=back_args),no_local_search=True,maxfun=int(1e6))
+        simu_args=(n,pnts,nrm_pnts,nrm_vecs,maps,exts,c_l,c_r,c_a,c_v_0,0,0)
+        back_args=(n,pnts,nrm_pnts,nrm_vecs,maps,exts,c_l,c_r,c_a,c_v_0,nums,vtps,vtcs,0,0,log,vis,out)
+        res=dual_annealing(simu_obp_dt,args=simu_args,bounds=opt_1_bds,seed=0,maxiter=int(1e6),\
+            callback=partial(back_da_dt,args=back_args),no_local_search=True,maxfun=int(1e6))
+#       simu_args=(n,pnts,maps,exts,c_l,c_r,c_a,c_v_0,0,0)
+#       back_args=(n,pnts,maps,exts,c_l,c_r,c_a,c_v_0,nums,vtps,vtcs,0,0,log,vis,out)
+#       res=dual_annealing(simu_obp_pt,args=simu_args,bounds=opt_1_bds,seed=0,maxiter=int(1e6),\
+#           callback=partial(back_da_pt,args=back_args),no_local_search=True,maxfun=int(1e6))
 #
     elif opt_str == 'objall':
 #

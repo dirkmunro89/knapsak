@@ -1,5 +1,6 @@
 #
 import vtk
+import coacd
 import numpy as np
 from vtk.util import numpy_support
 from scipy.spatial.transform import Rotation as R
@@ -81,6 +82,13 @@ def init(i,fln,c_e,c_s,log,deb):
         log.info('Cleaned and decimated: ')
         log.info('-'*60)
 #
+        flt=vtk.vtkAdaptiveSubdivisionFilter()
+        flt.SetInputData(obj.vtp)
+        flt.SetMaximumEdgeLength(10.)
+        flt.SetMaximumTriangleArea(1e8)
+        flt.Update()
+        obj.vtp=flt.GetOutput()
+#
         if obj.vtp.GetNumberOfCells() > c_e:
             flt=vtk.vtkQuadricDecimation()
             flt.SetInputData(obj.vtp)
@@ -140,6 +148,40 @@ def init(i,fln,c_e,c_s,log,deb):
         obj.vtp=flt.GetOutput()
 #
         obj.stp=woutstr(obj.vtp)
+#
+#       make normals
+#
+        flt=vtk.vtkPolyDataNormals()
+        flt.SetSplitting(0)
+        flt.SetAutoOrientNormals(1)
+        flt.SetComputePointNormals(0)
+        flt.SetComputeCellNormals(1)
+        flt.SetInputData(obj.vtp)
+        flt.Update()
+        tmp=flt.GetOutput()
+        obj.nrm_vec=numpy_support.vtk_to_numpy(tmp.GetCellData().GetArray('Normals'))
+
+        woutfle('./',tmp,'see',0)
+#
+#       get cell centroid coordinates
+#
+        flt=vtk.vtkCellCenters()
+        flt.SetInputData(obj.vtp)
+        flt.SetVertexCells(1)
+        flt.Update()
+        tmp=flt.GetOutput()
+        obj.nrm_pnt=numpy_support.vtk_to_numpy(tmp.GetPoints().GetData())
+#
+#       do convex decomposition
+#
+#       pts=obj.vtp.GetPoints().GetData()
+#       pts=numpy_support.vtk_to_numpy(obj.vtp.GetPoints().GetData())
+#       fac=numpy_support.vtk_to_numpy(obj.vtp.GetPolys().GetData())
+#       print(pts)
+#       print(fac[0:4])
+#       print(fac[4:8])
+#       stop
+#       mesh=coacd.Mesh()
 #
 #       get axis aligned bounds and bounding box volume
 #
