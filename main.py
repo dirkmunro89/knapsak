@@ -27,7 +27,7 @@ if __name__ == "__main__":
     c_l=np.array([200.,200.,200.]) # for in box
     c_s=1.01
     c_a=np.pi 
-    c_e=1000
+    c_e=100
 #
 #   get input arguments 
 #   - number to be stacked and

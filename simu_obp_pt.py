@@ -85,7 +85,7 @@ def simu_obp_pt(xk,n,pnts,maps,exts,c_l,c_r,c_a,c_v,int_flg,flg):
             if np.linalg.norm(cens[i]-cens[j])<1.1*(exts[maps[i]]+exts[maps[j]]):
                 for p in pnts_1[i]:
                     tmp=np.amin(np.linalg.norm(p-pnts_1[j],axis=1))
-                    if tmp < 1.:
+                    if tmp < 100.:
                         ct=ct+1
                         break
             if ct>0:
@@ -94,7 +94,7 @@ def simu_obp_pt(xk,n,pnts,maps,exts,c_l,c_r,c_a,c_v,int_flg,flg):
         if ct>0:
             break
 #   
-    f=(bds[1]-bds[0])*(bds[3]-bds[2])*(bds[5]-bds[4])/c_v+ct
+    f=(bds[1]-bds[0])*(bds[3]-bds[2])*(bds[5]-bds[4])/c_v+ct*1e1
 #
     return f
 #

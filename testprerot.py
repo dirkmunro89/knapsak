@@ -32,13 +32,14 @@ if __name__ == "__main__":
 #   - number to be stacked and
 #   - path to file
 #
-    t0=time.time()
+    t0=0#time.time()
     out='./out_%d/'%t0
     if not os.path.isdir(out):
         os.makedirs(out)
     else:
         print('error')
         sys.exit(1)
+    t0=time.time()
 #
     level=log.INFO
     format   = '%(message)s'

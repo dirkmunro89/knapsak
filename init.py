@@ -82,12 +82,12 @@ def init(i,fln,c_e,c_s,log,deb):
         log.info('Cleaned and decimated: ')
         log.info('-'*60)
 #
-        flt=vtk.vtkAdaptiveSubdivisionFilter()
-        flt.SetInputData(obj.vtp)
-        flt.SetMaximumEdgeLength(10.)
-        flt.SetMaximumTriangleArea(1e8)
-        flt.Update()
-        obj.vtp=flt.GetOutput()
+#       flt=vtk.vtkAdaptiveSubdivisionFilter()
+#       flt.SetInputData(obj.vtp)
+#       flt.SetMaximumEdgeLength(10.)
+#       flt.SetMaximumTriangleArea(1e8)
+#       flt.Update()
+#       obj.vtp=flt.GetOutput()
 #
         if obj.vtp.GetNumberOfCells() > c_e:
             flt=vtk.vtkQuadricDecimation()
