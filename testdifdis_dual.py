@@ -10,7 +10,6 @@ from vtk.util import numpy_support
 from scipy.optimize import minimize, dual_annealing
 from scipy.spatial.transform import Rotation as R
 #
-#
 from rndr import rndr
 #
 from init import init, pretfms6, pretfms24
@@ -19,7 +18,37 @@ from simu_obp_co import simu_obp_co, back_da_co
 from simu_obp_pt import simu_obp_pt, back_da_pt
 from simu_obp_dt import simu_obp_dt, back_da_dt
 #
+from t2dual import t2d
+#
 from util import tfmx, tran, appdata, woutfle
+#
+def hess(xt,xk,col,pnts,nuts,c_a,c_l):
+#
+    g=np.zeros(len(xt))
+    dposdt=np.zeros((len(xt),3))
+#
+    pos0=np.dot(xt[nuts[0]:nuts[1]],pnts[col[0]])+c_l*xk[7*col[0]+4:7*col[0]+7]
+    pos1=np.dot(xt[nuts[1]:nuts[2]],pnts[col[1]])+c_l*xk[7*col[1]+4:7*col[1]+7]
+#
+    dposdt[nuts[0]:nuts[1]]=pnts[col[0]]#np.dot(pnt,rot)
+    dposdt[nuts[1]:nuts[2]]=pnts[col[1]]#np.dot(pnt,rot)
+#
+    dis=pos0-pos1
+#
+    ddf=np.zeros((len(xt),len(xt)))
+#
+#   for i in range(nuts[0],nuts[1]):
+#       ddf[0][i]=2.*np.dot(dposdt[i],dposdt[i])#/c_l[0]**2.
+#       ddf[1][i]=0.
+#   for i in range(nuts[1],nuts[2]):
+#       ddf[0][i]=2.*np.dot(dposdt[i],dposdt[i])#/c_l[0]**2.
+#       ddf[2][i]=0.
+    ddf[nuts[0]:nuts[1],nuts[0]:nuts[1]]=2*np.dot(dposdt[nuts[0]:nuts[1]],dposdt[nuts[0]:nuts[1]].T)
+    ddf[nuts[1]:nuts[2],nuts[1]:nuts[2]]=2*np.dot(dposdt[nuts[1]:nuts[2]],dposdt[nuts[1]:nuts[2]].T)
+    ddf[nuts[1]:nuts[2],nuts[0]:nuts[1]]=-2*np.dot(dposdt[nuts[1]:nuts[2]],dposdt[nuts[0]:nuts[1]].T)
+    ddf[nuts[0]:nuts[1],nuts[1]:nuts[2]]=ddf[nuts[1]:nuts[2],nuts[0]:nuts[1]].T
+#
+    return ddf
 #
 def grad(xt,xk,col,pnts,nuts,c_a,c_l):
 #
@@ -33,15 +62,16 @@ def grad(xt,xk,col,pnts,nuts,c_a,c_l):
     dposdt[nuts[1]:nuts[2]]=pnts[col[1]]#np.dot(pnt,rot)
 #
     dis=pos0-pos1
-    g[nuts[0]:nuts[1]]=2.*np.dot(dposdt[nuts[0]:nuts[1]],dis)/np.amax(c_l)**2.
-    g[nuts[1]:nuts[2]]=-2.*np.dot(dposdt[nuts[1]:nuts[2]],dis)/np.amax(c_l)**2.
 #
-    if (np.sum(xt[nuts[0]:nuts[0+1]])-1.) +1e8> 0:
-        g[nuts[0]:nuts[1]]=g[nuts[0]:nuts[1]]+2.*((np.sum(xt[nuts[0]:nuts[1]])-1.))*(np.ones(nuts[1]-nuts[0]))*1e1
-    if (np.sum(xt[nuts[1]:nuts[1+1]])-1.) +1e8> 0:
-        g[nuts[1]:nuts[2]]=g[nuts[1]:nuts[2]]+2.*((np.sum(xt[nuts[1]:nuts[2]])-1.))*(np.ones(nuts[2]-nuts[1]))*1e1
+    df=np.zeros((3,len(xt)))
 #
-    return g
+    df[0][nuts[0]:nuts[1]]=2.*np.dot(dposdt[nuts[0]:nuts[1]],dis)#/c_l[0]**2.
+    df[0][nuts[1]:nuts[2]]=-2.*np.dot(dposdt[nuts[1]:nuts[2]],dis)#/c_l[0]**2.
+#
+    df[1][nuts[0]:nuts[1]]=np.ones(nuts[1]-nuts[0]) #+ np.ones(nuts[1]-nuts[0])#/(nuts[1]-nuts[0])
+    df[2][nuts[1]:nuts[2]]=np.ones(nuts[2]-nuts[1]) #+ np.ones(nuts[2]-nuts[1])#/(nuts[2]-nuts[1])
+#
+    return df
 #
 def func(xt,xk,col,pnts,nuts,c_a,c_l):
 #
@@ -54,14 +84,15 @@ def func(xt,xk,col,pnts,nuts,c_a,c_l):
 #   then the t does nothing--> 0. if it does, then the t counts.
 #   else we do convex decompositions
 #
-    pen=0.
-    if (np.sum(xt[nuts[0]:nuts[0+1]])-1.) +1e8> 0:
-        pen=pen+(np.sum(xt[nuts[0]:nuts[0+1]])-1.)**2.
-    if (np.sum(xt[nuts[1]:nuts[1+1]])-1.) +1e8> 0:
-        pen=pen+(np.sum(xt[nuts[1]:nuts[1+1]])-1.)**2.
+#   pen=0.
+#   pen=pen+(np.sum(xt[nuts[0]:nuts[0+1]])-1.)**2.
+#   pen=pen+(np.sum(xt[nuts[1]:nuts[1+1]])-1.)**2.
 #
+    f = np.zeros(3)
     dis=pos0-pos1
-    f=np.dot(dis,dis.T)/np.amax(c_l)**2.+1e1*pen
+    f[0]=np.dot(dis,dis.T)#/c_l[0]**2. #+ np.sum(xt)
+    f[1]=(np.sum(xt[nuts[0]:nuts[0+1]])-1.)#/(nuts[1]-nuts[0])#**2.
+    f[2]=(np.sum(xt[nuts[1]:nuts[1+1]])-1.)#/(nuts[2]-nuts[1])#**2.
 #
     return f
 #
@@ -253,13 +284,14 @@ if __name__ == "__main__":
     else:
         vis=None
 #
-    xk=np.array([0 for i in range(7*n)])
-#   xk[4]=1.
+    xk=np.array([0. for i in range(7*n)])
+    xk[4]=1.0/2.
+    xk[6]=0.1
 #   xk[0]=1.
 #   xk[1]=0.
 #   xk[2]=1.
 #   xk[3]=1.
-    xk=2.*np.random.rand(7*n)/2.-1./2.
+    xk=2.*np.random.rand(7*n)/4.-1./4.
 #
 #
 #
@@ -287,19 +319,78 @@ if __name__ == "__main__":
         rot=R.from_rotvec((c_a*xk[7*i])*tmp).as_matrix().T
         pnts_1.append(np.dot(pnt,rot))
 #
-    xt=np.zeros(nt)
+    xt=np.zeros(nt)#/51
 #
-    print('qp')
-    t0=time.time()
-    bds=[[0.,1.] for i in range(nt)]; tup_bds=tuple(bds)
-    sol=minimize(func,xt,args=(xk,col,pnts_1,nuts,c_a,c_l),\
-        bounds=tup_bds,jac=grad,method='L-BFGS-B',\
-        options={'disp':True,'gtol':1e-12,'ftol':1e-12,'maxls':1000})
-#       bounds=tup_bds,jac=grad,method='TNC',\
+    g=np.zeros(3,dtype=float)
+    dg=np.zeros((3,nt),dtype=float)
+    c_x=np.zeros((3,nt),dtype=float)
+    xd=np.zeros(2,dtype=float)
 #
-    t1=time.time()
-    xt=sol.x
-    print('distance=',np.sqrt(sol.fun*np.amax(c_l)**2.))
+    gold=np.ones(3,dtype=float)*1e8
+    golder=np.ones(3,dtype=float)*1e8
+    xtold=xt.copy()
+    xtolder=xt.copy()
+    xdold=np.zeros(2,dtype=float)
+    alpha=1.
+#
+    for i in range(10000):
+#
+        if i>0:
+            golder[:]=gold
+            gold[:]=g
+#
+        g=func(xt,xk,col,pnts_1,nuts,c_a,c_l)
+        dg=grad(xt,xk,col,pnts_1,nuts,c_a,c_l)
+        ddg=hess(xt,xk,col,pnts_1,nuts,c_a,c_l)
+        if i == 0:
+            gscl=max(g[0],1e-6)
+        g[0]=g[0]/gscl
+        dg[0]=dg[0]/gscl
+        ddg[0]=ddg[0]/gscl
+
+#
+        if g[0] > gold[0]:# or np.amax(np.absolute(g[1:]))>1e-1:
+            xt[:]=xtold
+            xtold[:]=xtolder
+            xd[:]=xdold
+            alpha=alpha*2.
+            gold[:]=golder
+            g=func(xt,xk,col,pnts_1,nuts,c_a,c_l)
+            dg=grad(xt,xk,col,pnts_1,nuts,c_a,c_l)
+            ddg=hess(xt,xk,col,pnts_1,nuts,c_a,c_l)
+            g[0]=g[0]/gscl
+            dg[0]=dg[0]/gscl
+            ddg[0]=ddg[0]/gscl
+        else:
+            alpha=1.
+#
+        print(i,g[0],xd,alpha)
+#
+        c_s=np.ones(2)
+        mov=.1
+        x_u=np.ones(nt)
+        x_l=np.zeros(nt)
+        d_l = np.maximum(xt-mov*(x_u-x_l),x_l)
+        d_u = np.minimum(xt+mov*(x_u-x_l),x_u)
+        [xt_new,xd_new]=t2d(nt,2,xt,xd,d_l,d_u,g,dg,ddg*alpha,c_s)
+#
+        xtolder[:]=xtold
+        xtold[:]=xt
+        xdold[:]=xd
+        xt[:]=xt_new
+        xd[:]=xd_new
+#
+        if  alpha<1.1 and np.linalg.norm(xt-xtold)<1e-6:# and np.amax(np.absolute(g[1:]))<1e-2:
+            g=func(xt,xk,col,pnts_1,nuts,c_a,c_l)
+            print('break on', g)
+            break
+#
+#   bds=[[0.,1.] for i in range(nt)]; tup_bds=tuple(bds)
+#   sol=minimize(func,xt,args=(xk,col,pnts_1,nuts,c_a,c_l),\
+#       bounds=tup_bds,jac=grad,method='L-BFGS-B',options={'disp':True, 'maxiter':1000000})
+#
+#   print(sol.x)
+#   xt=sol.x
 #
     tees=[]
     for i in range(n):
@@ -345,39 +436,4 @@ if __name__ == "__main__":
     ply.SetLines(cell)
     woutfle(out,ply,'line',0)
 #
-#
-#   check
-#
-    vtps_1=[]
-    for i in range(n):
-#
-        tfmx(xk,i,c_l,c_a,c_r,tfms[i],99,0)
-#
-        vtp=tran(vtps[maps[i]],tfms[i]) # can maybe get this from col object
-#
-        vtps_1.append(vtp)
-
-#
-    flt0=vtk.vtkImplicitPolyDataDistance()
-    flt1=vtk.vtkImplicitPolyDataDistance()
-#
-    flt0.SetInput(vtps_1[0])
-    flt1.SetInput(vtps_1[1])
-#
-    pnt0=vtps_1[0].GetPoints()
-    pnt1=vtps_1[1].GetPoints()
-#
-    min_sd=1e8
-    for pid in range(pnt0.GetNumberOfPoints()):
-        p = pnt0.GetPoint(pid)
-        sd = flt1.EvaluateFunction(p)
-        min_sd=min(min_sd,sd)
-    for pid in range(pnt1.GetNumberOfPoints()):
-        p = pnt1.GetPoint(pid)
-        sd = flt0.EvaluateFunction(p)
-        min_sd=min(min_sd,sd)
-#
-    print(min_sd)
-#
-    stop
-#
+#   print(sol.fun)

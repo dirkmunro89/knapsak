@@ -7,7 +7,7 @@ import numpy as np
 import logging as log
 from functools import partial
 from vtk.util import numpy_support
-from scipy.optimize import minimize, dual_annealing
+from scipy.optimize import minimize, dual_annealing, LinearConstraint
 from scipy.spatial.transform import Rotation as R
 #
 #
@@ -33,13 +33,13 @@ def grad(xt,xk,col,pnts,nuts,c_a,c_l):
     dposdt[nuts[1]:nuts[2]]=pnts[col[1]]#np.dot(pnt,rot)
 #
     dis=pos0-pos1
-    g[nuts[0]:nuts[1]]=2.*np.dot(dposdt[nuts[0]:nuts[1]],dis)/np.amax(c_l)**2.
-    g[nuts[1]:nuts[2]]=-2.*np.dot(dposdt[nuts[1]:nuts[2]],dis)/np.amax(c_l)**2.
+    g[nuts[0]:nuts[1]]=2.*np.dot(dposdt[nuts[0]:nuts[1]],dis)#/c_l[0]
+    g[nuts[1]:nuts[2]]=-2.*np.dot(dposdt[nuts[1]:nuts[2]],dis)#/c_l[0]
 #
-    if (np.sum(xt[nuts[0]:nuts[0+1]])-1.) +1e8> 0:
-        g[nuts[0]:nuts[1]]=g[nuts[0]:nuts[1]]+2.*((np.sum(xt[nuts[0]:nuts[1]])-1.))*(np.ones(nuts[1]-nuts[0]))*1e1
-    if (np.sum(xt[nuts[1]:nuts[1+1]])-1.) +1e8> 0:
-        g[nuts[1]:nuts[2]]=g[nuts[1]:nuts[2]]+2.*((np.sum(xt[nuts[1]:nuts[2]])-1.))*(np.ones(nuts[2]-nuts[1]))*1e1
+    if (np.sum(xt[nuts[0]:nuts[0+1]])-1.) > 0:
+        g[nuts[0]:nuts[1]]=g[nuts[0]:nuts[1]]+2.*((np.sum(xt[nuts[0]:nuts[1]])-1.))*(np.ones(nuts[1]-nuts[0]))*1e6
+    if (np.sum(xt[nuts[1]:nuts[1+1]])-1.) > 0:
+        g[nuts[1]:nuts[2]]=g[nuts[1]:nuts[2]]+2.*((np.sum(xt[nuts[1]:nuts[2]])-1.))*(np.ones(nuts[2]-nuts[1]))*1e6
 #
     return g
 #
@@ -55,13 +55,13 @@ def func(xt,xk,col,pnts,nuts,c_a,c_l):
 #   else we do convex decompositions
 #
     pen=0.
-    if (np.sum(xt[nuts[0]:nuts[0+1]])-1.) +1e8> 0:
+    if (np.sum(xt[nuts[0]:nuts[0+1]])-1.) > 0:
         pen=pen+(np.sum(xt[nuts[0]:nuts[0+1]])-1.)**2.
-    if (np.sum(xt[nuts[1]:nuts[1+1]])-1.) +1e8> 0:
+    if (np.sum(xt[nuts[1]:nuts[1+1]])-1.) > 0:
         pen=pen+(np.sum(xt[nuts[1]:nuts[1+1]])-1.)**2.
 #
     dis=pos0-pos1
-    f=np.dot(dis,dis.T)/np.amax(c_l)**2.+1e1*pen
+    f=np.dot(dis,dis.T) + 1e6*pen
 #
     return f
 #
@@ -72,7 +72,7 @@ if __name__ == "__main__":
     c_l=np.array([300.,300.,300.]) # for in box
     c_s=1.01
     c_a=np.pi 
-    c_e=10000
+    c_e=1000
 #
 #   get input arguments 
 #   - number to be stacked and
@@ -259,7 +259,7 @@ if __name__ == "__main__":
 #   xk[1]=0.
 #   xk[2]=1.
 #   xk[3]=1.
-    xk=2.*np.random.rand(7*n)/2.-1./2.
+    xk=2.*np.random.rand(7*n)/4.-1./4.
 #
 #
 #
@@ -289,17 +289,22 @@ if __name__ == "__main__":
 #
     xt=np.zeros(nt)
 #
-    print('qp')
+    tmp1=np.zeros(nt)
+    tmp1[nuts[0]:nuts[1]]=1.
+    tmp2=np.zeros(nt)
+    tmp2[nuts[1]:nuts[2]]=1.
+    linear_constraint=LinearConstraint([tmp1,tmp2],[-np.inf,-np.inf],[1.,1.])
+#
     t0=time.time()
     bds=[[0.,1.] for i in range(nt)]; tup_bds=tuple(bds)
     sol=minimize(func,xt,args=(xk,col,pnts_1,nuts,c_a,c_l),\
-        bounds=tup_bds,jac=grad,method='L-BFGS-B',\
-        options={'disp':True,'gtol':1e-12,'ftol':1e-12,'maxls':1000})
-#       bounds=tup_bds,jac=grad,method='TNC',\
+        bounds=tup_bds,jac=grad,method='slsqp',constraints=[linear_constraint],
+        options={'disp':1,'ftol':1e-12})#,'gtol':1e-12,'ftol':1e-12,'maxls':1000})
 #
     t1=time.time()
+    print(sol.x)
+    print(sol)
     xt=sol.x
-    print('distance=',np.sqrt(sol.fun*np.amax(c_l)**2.))
 #
     tees=[]
     for i in range(n):
@@ -345,39 +350,4 @@ if __name__ == "__main__":
     ply.SetLines(cell)
     woutfle(out,ply,'line',0)
 #
-#
-#   check
-#
-    vtps_1=[]
-    for i in range(n):
-#
-        tfmx(xk,i,c_l,c_a,c_r,tfms[i],99,0)
-#
-        vtp=tran(vtps[maps[i]],tfms[i]) # can maybe get this from col object
-#
-        vtps_1.append(vtp)
-
-#
-    flt0=vtk.vtkImplicitPolyDataDistance()
-    flt1=vtk.vtkImplicitPolyDataDistance()
-#
-    flt0.SetInput(vtps_1[0])
-    flt1.SetInput(vtps_1[1])
-#
-    pnt0=vtps_1[0].GetPoints()
-    pnt1=vtps_1[1].GetPoints()
-#
-    min_sd=1e8
-    for pid in range(pnt0.GetNumberOfPoints()):
-        p = pnt0.GetPoint(pid)
-        sd = flt1.EvaluateFunction(p)
-        min_sd=min(min_sd,sd)
-    for pid in range(pnt1.GetNumberOfPoints()):
-        p = pnt1.GetPoint(pid)
-        sd = flt0.EvaluateFunction(p)
-        min_sd=min(min_sd,sd)
-#
-    print(min_sd)
-#
-    stop
-#
+    print(sol.fun)

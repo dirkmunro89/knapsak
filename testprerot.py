@@ -39,13 +39,13 @@ if __name__ == "__main__":
     else:
         print('error')
         sys.exit(1)
-    t0=time.time()
 #
     level=log.INFO
     format   = '%(message)s'
     handlers=[log.FileHandler('history_%d.log'%t0), log.StreamHandler()]
     log.basicConfig(level=level, format=format, handlers=handlers)
 #
+    t0=time.time()
 #
     log.info('='*60)
     tmp=" ".join(sys.argv)
