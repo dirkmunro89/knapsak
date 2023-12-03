@@ -130,7 +130,7 @@ def simu_obp_co(xk,n,cols,tfms,vtps,exts,maps,c_l,c_r,c_a,c_v,int_flg,flg):
 #
         tfmx(xk,i,c_l,c_a,c_r,tfms[i],int_flg,1)
 #
-    f=(bds[1]-bds[0])*(bds[3]-bds[2])*(bds[5]-bds[4])/c_v+ct*1e1
+    f=(bds[1]-bds[0])*(bds[3]-bds[2])*(bds[5]-bds[4])/c_v+ct*n
 #
     return f
 #
