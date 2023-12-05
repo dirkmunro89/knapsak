@@ -1,4 +1,5 @@
 #
+import osqp
 import os
 import sys
 import vtk
@@ -26,7 +27,7 @@ from t2dual import t2d
 #
 from util import tfmx, tran, appdata, woutfle
 #
-def hess(xt,xk,col,pnts,nuts,c_a,c_l):
+def hess(xt,xk,col,pnts,nuts,c_a,c_l,scl):
 #
     g=np.zeros(len(xt))
     dposdt=np.zeros((len(xt),3))
@@ -72,9 +73,9 @@ def hess(xt,xk,col,pnts,nuts,c_a,c_l):
             ddf_lst_tmp2.append(ddf[i][j])
         ddf_lst.append([ddf_lst_tmp1,ddf_lst_tmp2])
 #
-    return ddf_lst
+    return ddf/scl
 #
-def grad(xt,xk,col,pnts,nuts,c_a,c_l):
+def grad(xt,xk,col,pnts,nuts,c_a,c_l,scl):
 #
     g=np.zeros(len(xt))
     dposdt=np.zeros((len(xt),3))
@@ -89,8 +90,8 @@ def grad(xt,xk,col,pnts,nuts,c_a,c_l):
 #
     df=np.zeros((3,len(xt)))
 #
-    df[0][nuts[0]:nuts[1]]=2.*np.dot(dposdt[nuts[0]:nuts[1]],dis)#/c_l[0]**2.
-    df[0][nuts[1]:nuts[2]]=-2.*np.dot(dposdt[nuts[1]:nuts[2]],dis)#/c_l[0]**2.
+    df[0][nuts[0]:nuts[1]]=2.*np.dot(dposdt[nuts[0]:nuts[1]],dis)/scl#/c_l[0]**2.
+    df[0][nuts[1]:nuts[2]]=-2.*np.dot(dposdt[nuts[1]:nuts[2]],dis)/scl#/c_l[0]**2.
 #
     df[1][nuts[0]:nuts[1]]=np.ones(nuts[1]-nuts[0]) #+ np.ones(nuts[1]-nuts[0])#/(nuts[1]-nuts[0])
     df[2][nuts[1]:nuts[2]]=np.ones(nuts[2]-nuts[1]) #+ np.ones(nuts[2]-nuts[1])#/(nuts[2]-nuts[1])
@@ -98,7 +99,7 @@ def grad(xt,xk,col,pnts,nuts,c_a,c_l):
 #
     return df
 #
-def func(xt,xk,col,pnts,nuts,c_a,c_l):
+def func(xt,xk,col,pnts,nuts,c_a,c_l,scl):
 #
     pos0=np.dot(xt[nuts[0]:nuts[1]],pnts[col[0]])+c_l*xk[7*col[0]+4:7*col[0]+7]
     pos1=np.dot(xt[nuts[1]:nuts[2]],pnts[col[1]])+c_l*xk[7*col[1]+4:7*col[1]+7]
@@ -115,7 +116,7 @@ def func(xt,xk,col,pnts,nuts,c_a,c_l):
 #
     f = np.zeros(3)
     dis=pos0-pos1
-    f[0]=np.dot(dis,dis.T)#/c_l[0]**2. #+ np.sum(xt)
+    f[0]=np.dot(dis,dis.T)/scl#/c_l[0]**2. #+ np.sum(xt)
     f[1]=(np.sum(xt[nuts[0]:nuts[0+1]])-1.)#/(nuts[1]-nuts[0])#**2.
     f[2]=(np.sum(xt[nuts[1]:nuts[1+1]])-1.)#/(nuts[2]-nuts[1])#**2.
 #
@@ -128,7 +129,7 @@ if __name__ == "__main__":
     c_l=np.array([300.,300.,300.]) # for in box
     c_s=1.01
     c_a=np.pi 
-    c_e=10000
+    c_e=1000
 #
 #   get input arguments 
 #   - number to be stacked and
@@ -163,7 +164,7 @@ if __name__ == "__main__":
     log.info('Writing output to:\n%s'%out)
     log.info('='*60)
 #
-    sys.argv=['prerot.py', 'objall', '0', '2', 'stl/3DBenchy.stl']
+    sys.argv=['prerot.py', 'objall', '0', '2', 'stl/Bunny.stl']
 #
     opt_str=sys.argv[1]
     vis_flg=int(sys.argv[2])
@@ -344,7 +345,7 @@ if __name__ == "__main__":
         rot=R.from_rotvec((c_a*xk[7*i])*tmp).as_matrix().T
         pnts_1.append(np.dot(pnt,rot))
 #
-    xt=np.zeros(nt)#/51
+    xt=np.zeros(nt)
 #
     g=np.zeros(3,dtype=float)
     dg=np.zeros((3,nt),dtype=float)
@@ -368,9 +369,11 @@ if __name__ == "__main__":
     dx_l=np.zeros(nt)-xt
     dx_u=np.ones(nt)-xt
 #
-    g=func(xt,xk,col,pnts_1,nuts,c_a,c_l)
-    dg=grad(xt,xk,col,pnts_1,nuts,c_a,c_l)
-    ddg=hess(xt,xk,col,pnts_1,nuts,c_a,c_l)
+    scl=np.linalg.norm(c_l*xk[7*col[0]+4:7*col[0]+7]-c_l*xk[7*col[1]+4:7*col[1]+7])**2.
+#
+    g=func(xt,xk,col,pnts_1,nuts,c_a,c_l,scl)
+    dg=grad(xt,xk,col,pnts_1,nuts,c_a,c_l,scl)
+    ddg=hess(xt,xk,col,pnts_1,nuts,c_a,c_l,scl)
 #
 #   ddL=ddg[0]#np.maximum(ddg[0]+np.dot(x_d.transpose(),ddg[1:]),0e0)
     if 1 ==0:
@@ -401,7 +404,7 @@ if __name__ == "__main__":
         g=func(xt,xk,col,pnts_1,nuts,c_a,c_l)
         print('g',g)
         print(sol['z'][:2])
-    else:       
+    elif 2 == 1:       
         prob=cplex.Cplex()
 #       prob.set_results_stream(None)
 #       prob.set_log_stream(None)
@@ -427,8 +430,32 @@ if __name__ == "__main__":
 #
         xt[:]=prob.solution.get_values()
 #
+    else:
 #   for i in range(10000):
 #
+        dx_l=np.ones(nt,dtype=np.float64)
+        dx_u=np.ones(nt,dtype=np.float64)
+#
+        ddL=np.zeros(nt,dtype=np.float64)
+#
+        dx_l=np.zeros(nt)-xt
+        dx_u=np.ones(nt)-xt
+#
+#       ddL=#np.maximum(c_x[0]+np.dot(x_d.transpose(),c_x[1:]),0e0)
+#
+        J=dg[0]; ind = np.array(range(nt))
+        Q=sparse.csc_matrix(ddg)
+        tmp=np.zeros((nt,nt),dtype=np.float64); np.fill_diagonal(tmp,1e0)
+        A=sparse.csc_matrix(np.append(dg[1:],tmp,axis=0))
+        u=-g[1:]; l=-np.inf*np.ones(2,dtype=float)
+        l=np.append(l,dx_l); u=np.append(u,dx_u)
+#
+        obj = osqp.OSQP()
+        obj.setup(Q,J,A,l,u,verbose=True,\
+            max_iter=int(1e6),scaling=10,scaled_termination=True,eps_abs=1e-6,eps_rel=1e-6,polish=False)
+        res=obj.solve()
+        print(res.y[:2])
+        xt=res.x
 #       if i>0:
 #           golder[:]=gold
 #           gold[:]=g
@@ -486,6 +513,10 @@ if __name__ == "__main__":
 #   print(sol.x)
 #   xt=sol.x
 #
+    g=func(xt,xk,col,pnts_1,nuts,c_a,c_l,scl)
+#
+    print('distance',np.sqrt(g[0]*scl))
+#
     tees=[]
     for i in range(n):
         tees.append(xt[nuts[i]:nuts[i+1]])
@@ -531,3 +562,59 @@ if __name__ == "__main__":
     woutfle(out,ply,'line',0)
 #
 #   print(sol.fun)
+#
+    vtps_1=[]
+    for i in range(n):
+#
+        tfmx(xk,i,c_l,c_a,c_r,tfms[i],99,0)
+#
+        vtp=tran(vtps[maps[i]],tfms[i]) # can maybe get this from col object
+#
+        vtps_1.append(vtp)
+
+#
+    flt0=vtk.vtkImplicitPolyDataDistance()
+    flt1=vtk.vtkImplicitPolyDataDistance()
+#
+    flt0.SetInput(vtps_1[0])
+    flt1.SetInput(vtps_1[1])
+#
+    pnt0=vtps_1[0].GetPoints()
+    pnt1=vtps_1[1].GetPoints()
+#
+    min_sd0=1e8
+    min_sd1=1e8
+    min_p0=0.
+    min_p1=0.
+    for pid in range(pnt0.GetNumberOfPoints()):
+        p = pnt0.GetPoint(pid)
+        sd = flt1.EvaluateFunction(p)
+        if sd < min_sd0:
+            min_p0=p
+        min_sd0=min(min_sd0,sd)
+    for pid in range(pnt1.GetNumberOfPoints()):
+        p = pnt1.GetPoint(pid)
+        sd = flt0.EvaluateFunction(p)
+        if sd < min_sd1:
+            min_p1=p
+        min_sd1=min(min_sd1,sd)
+#
+    points=vtk.vtkPoints()
+    points.InsertNextPoint(min_p0)
+    points.InsertNextPoint(min_p1)
+    print(max(min_sd0,0.))
+    print(max(min_sd1,0.))
+    line=vtk.vtkPolyLine()
+    line.GetPointIds().SetNumberOfIds(2)
+    line.GetPointIds().SetId(0,0)
+    line.GetPointIds().SetId(1,1)
+    cell=vtk.vtkCellArray()
+    cell.InsertNextCell(line)
+    ply=vtk.vtkPolyData()
+    ply.SetPoints(points)
+    ply.SetLines(cell)
+    woutfle(out,ply,'line_sd',0)
+
+
+
+

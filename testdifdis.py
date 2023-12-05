@@ -21,7 +21,7 @@ from simu_obp_dt import simu_obp_dt, back_da_dt
 #
 from util import tfmx, tran, appdata, woutfle
 #
-def grad(xt,xk,col,pnts,nuts,c_a,c_l):
+def grad(xt,xk,col,pnts,nuts,c_a,c_l,scl):
 #
     g=np.zeros(len(xt))
     dposdt=np.zeros((len(xt),3))
@@ -29,21 +29,23 @@ def grad(xt,xk,col,pnts,nuts,c_a,c_l):
     pos0=np.dot(xt[nuts[0]:nuts[1]],pnts[col[0]])+c_l*xk[7*col[0]+4:7*col[0]+7]
     pos1=np.dot(xt[nuts[1]:nuts[2]],pnts[col[1]])+c_l*xk[7*col[1]+4:7*col[1]+7]
 #
-    dposdt[nuts[0]:nuts[1]]=pnts[col[0]]#np.dot(pnt,rot)
-    dposdt[nuts[1]:nuts[2]]=pnts[col[1]]#np.dot(pnt,rot)
+#   dposdt[nuts[0]:nuts[1]]=pnts[col[0]]#np.dot(pnt,rot)
+#   dposdt[nuts[1]:nuts[2]]=pnts[col[1]]#np.dot(pnt,rot)
 #
     dis=pos0-pos1
-    g[nuts[0]:nuts[1]]=2.*np.dot(dposdt[nuts[0]:nuts[1]],dis)/np.amax(c_l)**2.
-    g[nuts[1]:nuts[2]]=-2.*np.dot(dposdt[nuts[1]:nuts[2]],dis)/np.amax(c_l)**2.
+    g[nuts[0]:nuts[1]]=2.*np.dot(pnts[col[0]],dis)/scl#np.amax(c_l)**2.
+    g[nuts[1]:nuts[2]]=-2.*np.dot(pnts[col[1]],dis)/scl#np.amax(c_l)**2.
 #
-    if (np.sum(xt[nuts[0]:nuts[0+1]])-1.) +1e8> 0:
-        g[nuts[0]:nuts[1]]=g[nuts[0]:nuts[1]]+2.*((np.sum(xt[nuts[0]:nuts[1]])-1.))*(np.ones(nuts[1]-nuts[0]))*1e1
-    if (np.sum(xt[nuts[1]:nuts[1+1]])-1.) +1e8> 0:
-        g[nuts[1]:nuts[2]]=g[nuts[1]:nuts[2]]+2.*((np.sum(xt[nuts[1]:nuts[2]])-1.))*(np.ones(nuts[2]-nuts[1]))*1e1
+    g0=(np.sum(xt[nuts[0]:nuts[1]])-1.)#/(nuts[1]-nuts[0])
+    g1=(np.sum(xt[nuts[1]:nuts[2]])-1.)#/(nuts[2]-nuts[1])
+    if g0 > 0:
+        g[nuts[0]:nuts[1]]=g[nuts[0]:nuts[1]]+2.*g0*1e2
+    if g1 > 0:
+        g[nuts[1]:nuts[2]]=g[nuts[1]:nuts[2]]+2.*g1*1e2
 #
     return g
 #
-def func(xt,xk,col,pnts,nuts,c_a,c_l):
+def func(xt,xk,col,pnts,nuts,c_a,c_l,scl):
 #
     pos0=np.dot(xt[nuts[0]:nuts[1]],pnts[col[0]])+c_l*xk[7*col[0]+4:7*col[0]+7]
     pos1=np.dot(xt[nuts[1]:nuts[2]],pnts[col[1]])+c_l*xk[7*col[1]+4:7*col[1]+7]
@@ -55,13 +57,15 @@ def func(xt,xk,col,pnts,nuts,c_a,c_l):
 #   else we do convex decompositions
 #
     pen=0.
-    if (np.sum(xt[nuts[0]:nuts[0+1]])-1.) +1e8> 0:
-        pen=pen+(np.sum(xt[nuts[0]:nuts[0+1]])-1.)**2.
-    if (np.sum(xt[nuts[1]:nuts[1+1]])-1.) +1e8> 0:
-        pen=pen+(np.sum(xt[nuts[1]:nuts[1+1]])-1.)**2.
+    g0=(np.sum(xt[nuts[0]:nuts[1]])-1.)#/(nuts[1]-nuts[0])
+    g1=(np.sum(xt[nuts[1]:nuts[2]])-1.)#/(nuts[2]-nuts[1])
+    if g0 > 0:
+        pen=pen+g0**2.
+    if g1 > 0:
+        pen=pen+g1**2.
 #
     dis=pos0-pos1
-    f=np.dot(dis,dis.T)/np.amax(c_l)**2.+1e1*pen
+    f=np.dot(dis,dis.T)/scl+1e2*pen
 #
     return f
 #
@@ -287,19 +291,23 @@ if __name__ == "__main__":
         rot=R.from_rotvec((c_a*xk[7*i])*tmp).as_matrix().T
         pnts_1.append(np.dot(pnt,rot))
 #
-    xt=np.zeros(nt)
+    xt=np.zeros(nt)#np.ones(nt)/nt*2.
+#
+    scl=np.linalg.norm(c_l*xk[7*col[0]+4:7*col[0]+7]-c_l*xk[7*col[1]+4:7*col[1]+7])**2.
 #
     print('qp')
     t0=time.time()
     bds=[[0.,1.] for i in range(nt)]; tup_bds=tuple(bds)
-    sol=minimize(func,xt,args=(xk,col,pnts_1,nuts,c_a,c_l),\
-        bounds=tup_bds,jac=grad,method='L-BFGS-B',\
-        options={'disp':True,'gtol':1e-12,'ftol':1e-12,'maxls':1000})
+    sol=minimize(func,xt,args=(xk,col,pnts_1,nuts,c_a,c_l,scl),\
+        bounds=tup_bds,jac=grad,method='L-BFGS-B',options={'gtol':1e-12,'ftol':1e-12})#,\
+#       options={'disp':False,'gtol':1e-12,'ftol':1e-12,'maxls':1000})
 #       bounds=tup_bds,jac=grad,method='TNC',\
+#   sol=minimize(func,sol.x,args=(xk,col,pnts_1,nuts,c_a,c_l),\
+#       bounds=tup_bds,jac=grad,method='L-BFGS-B',options={'gtol':1e-12,'ftol':1e-12})#,\
 #
     t1=time.time()
     xt=sol.x
-    print('distance=',np.sqrt(sol.fun*np.amax(c_l)**2.))
+    print('distance=',np.sqrt(sol.fun*scl))
 #
     tees=[]
     for i in range(n):
@@ -367,17 +375,38 @@ if __name__ == "__main__":
     pnt0=vtps_1[0].GetPoints()
     pnt1=vtps_1[1].GetPoints()
 #
-    min_sd=1e8
+    min_sd0=1e8
+    min_sd1=1e8
+    min_p0=0.
+    min_p1=0.
     for pid in range(pnt0.GetNumberOfPoints()):
         p = pnt0.GetPoint(pid)
         sd = flt1.EvaluateFunction(p)
-        min_sd=min(min_sd,sd)
+        if sd < min_sd0:
+            min_p0=p
+        min_sd0=min(min_sd0,sd)
     for pid in range(pnt1.GetNumberOfPoints()):
         p = pnt1.GetPoint(pid)
         sd = flt0.EvaluateFunction(p)
-        min_sd=min(min_sd,sd)
+        if sd < min_sd1:
+            min_p1=p
+        min_sd1=min(min_sd1,sd)
 #
-    print(min_sd)
+    points=vtk.vtkPoints()
+    points.InsertNextPoint(min_p0)
+    points.InsertNextPoint(min_p1)
+    print(max(min_sd0,0.))
+    print(max(min_sd1,0.))
+    line=vtk.vtkPolyLine()
+    line.GetPointIds().SetNumberOfIds(2)
+    line.GetPointIds().SetId(0,0)
+    line.GetPointIds().SetId(1,1)
+    cell=vtk.vtkCellArray()
+    cell.InsertNextCell(line)
+    ply=vtk.vtkPolyData()
+    ply.SetPoints(points)
+    ply.SetLines(cell)
+    woutfle(out,ply,'line_sd',0)
 #
     stop
 #
